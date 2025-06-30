@@ -31,7 +31,8 @@ $details = $stmt->fetchAll();
         <img src="../assets/logo.png" alt="Logo entreprise" style="max-width:120px; display:block; margin:0 auto 10px auto;">
         <h1 style="margin-bottom:0;">Nom de l'entreprise</h1>
         <h2 style="margin-top:5px;">Facture #<?= $invoice['id'] ?></h2>
-        <p>Date : <?= $invoice['invoice_date'] ?> | Statut : <?= $invoice['status'] ?></p>
+        <!-- <p>Date : <?= $invoice['invoice_date'] ?> | Statut : <?= $invoice['status'] ?></p> -->
+          <p>Date : <?= $invoice['invoice_date'] ?> | Statut : Payer</p>
      
     </div>
     <div class="facture-details">

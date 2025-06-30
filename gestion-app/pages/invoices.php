@@ -16,6 +16,7 @@ $invoices = $stmt->fetchAll();
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../assets/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { background: #f5f6fa; }
         .sidebar { min-height: 100vh; background: #222e3c; color: #fff; }
@@ -27,15 +28,24 @@ $invoices = $stmt->fetchAll();
         .topbar { background: #fff; border-bottom: 1px solid #eee; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; }
         .table thead { background: #007bff; color: #fff; }
         .btn-add { float: right; margin-bottom: 10px; }
+        .table-responsive { overflow-x: auto; }
         @media (max-width: 900px) {
-            .sidebar { min-height: auto; }
+            .sidebar { min-height: auto; position: fixed; left: -220px; top: 0; width: 200px; z-index: 1050; transition: left 0.3s; }
+            .sidebar.open { left: 0; }
+            .sidebar .logo { font-size: 1.2rem; }
+            .main-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0005; z-index: 1040; }
+            .main-overlay.active { display: block; }
+            main { padding-left: 0 !important; }
+            .topbar { flex-direction: column; align-items: flex-start; gap: 10px; }
         }
     </style>
 </head>
 <body>
+<div class="main-overlay" id="mainOverlay" onclick="toggleSidebar(false)"></div>
 <div class="container-fluid">
     <div class="row">
-        <nav class="col-md-2 d-none d-md-block sidebar">
+        <button class="btn btn-dark d-md-none m-2" onclick="toggleSidebar(true)"><i class="bi bi-list"></i></button>
+        <nav class="col-md-2 d-none d-md-block sidebar" id="sidebarMenu">
             <div class="logo mb-3">
                 <img src="../assets/logo.png" alt="Logo" style="max-width:40px;vertical-align:middle;"> <span>WINNER</span>
             </div>
@@ -57,7 +67,7 @@ $invoices = $stmt->fetchAll();
                 <a href="add_invoice.php" class="btn btn-primary btn-add"><i class="bi bi-plus"></i> Générer une facture</a>
             </div>
             <div class="card">
-                <div class="card-body">
+                <div class="card-body table-responsive">
                     <table class="table table-hover align-middle">
                         <thead>
                             <tr>
@@ -91,5 +101,23 @@ $invoices = $stmt->fetchAll();
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function toggleSidebar(open) {
+    const sidebar = document.getElementById('sidebarMenu');
+    const overlay = document.getElementById('mainOverlay');
+    if (open) {
+        sidebar.classList.add('open');
+        overlay.classList.add('active');
+        sidebar.classList.remove('d-none');
+    } else {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+        setTimeout(()=>sidebar.classList.add('d-none'), 300);
+    }
+}
+document.querySelectorAll('#sidebarMenu a').forEach(a => {
+    a.addEventListener('click', () => toggleSidebar(false));
+});
+</script>
 </body>
 </html> 

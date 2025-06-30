@@ -29,6 +29,7 @@ foreach ($chart_data as $row) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../assets/style.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { background: #f5f6fa; }
         .sidebar { min-height: 100vh; background: #222e3c; color: #fff; }
@@ -49,15 +50,25 @@ foreach ($chart_data as $row) {
         .dashboard-card.bg-secondary { background: #6c757d; color: #fff; }
         .dashboard-card .value { font-size: 1.6rem; font-weight: bold; }
         .dashboard-card .label { font-size: 1rem; }
+        .table-responsive { overflow-x: auto; }
         @media (max-width: 900px) {
+            .sidebar { min-height: auto; position: fixed; left: -220px; top: 0; width: 200px; z-index: 1050; transition: left 0.3s; }
+            .sidebar.open { left: 0; }
+            .sidebar .logo { font-size: 1.2rem; }
+            .main-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0005; z-index: 1040; }
+            .main-overlay.active { display: block; }
+            main { padding-left: 0 !important; }
+            .topbar { flex-direction: column; align-items: flex-start; gap: 10px; }
             .dashboard-cards { flex-direction: column; }
         }
     </style>
 </head>
 <body>
+<div class="main-overlay" id="mainOverlay" onclick="toggleSidebar(false)"></div>
 <div class="container-fluid">
     <div class="row">
-        <nav class="col-md-2 d-none d-md-block sidebar">
+        <button class="btn btn-dark d-md-none m-2" onclick="toggleSidebar(true)"><i class="bi bi-list"></i></button>
+        <nav class="col-md-2 d-none d-md-block sidebar" id="sidebarMenu">
             <div class="logo mb-3">
                 <img src="../assets/logo.png" alt="Logo" style="max-width:40px;vertical-align:middle;"> <span>W-P</span>
             </div>
@@ -110,21 +121,21 @@ foreach ($chart_data as $row) {
                 <div class="dashboard-card bg-success">
                     <span class="icon"><i class="bi bi-currency-dollar"></i></span>
                     <div>
-                        <div class="value"><?= number_format($total_sales_amount,2) ?> €</div>
+                        <div class="value"><?= number_format($total_sales_amount,2) ?> $</div>
                         <div class="label">Total ventes</div>
                     </div>
                 </div>
                 <div class="dashboard-card bg-danger">
                     <span class="icon"><i class="bi bi-cash-stack"></i></span>
                     <div>
-                        <div class="value"><?= number_format($total_expense,2) ?> €</div>
+                        <div class="value"><?= number_format($total_expense,2) ?> $</div>
                         <div class="label">Total dépenses</div>
                     </div>
                 </div>
             </div>
             <div class="card mb-4">
                 <div class="card-header bg-white"><b>Ventes par mois</b></div>
-                <div class="card-body">
+                <div class="card-body table-responsive">
                     <canvas id="salesChart" height="80"></canvas>
                 </div>
             </div>
@@ -140,7 +151,7 @@ const salesChart = new Chart(ctx, {
     data: {
         labels: <?= json_encode($months) ?>,
         datasets: [{
-            label: 'Ventes (€)',
+            label: 'Ventes ($)',
             data: <?= json_encode($totals) ?>,
             backgroundColor: '#007bff',
         }]
@@ -149,6 +160,23 @@ const salesChart = new Chart(ctx, {
         responsive: true,
         plugins: { legend: { display: false } }
     }
+});
+
+function toggleSidebar(open) {
+    const sidebar = document.getElementById('sidebarMenu');
+    const overlay = document.getElementById('mainOverlay');
+    if (open) {
+        sidebar.classList.add('open');
+        overlay.classList.add('active');
+        sidebar.classList.remove('d-none');
+    } else {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+        setTimeout(()=>sidebar.classList.add('d-none'), 300);
+    }
+}
+document.querySelectorAll('#sidebarMenu a').forEach(a => {
+    a.addEventListener('click', () => toggleSidebar(false));
 });
 </script>
 </body>
