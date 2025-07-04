@@ -63,6 +63,17 @@ CREATE TABLE IF NOT EXISTS invoices (
     FOREIGN KEY (sale_id) REFERENCES sales(id)
 );
 
+-- Table des sorties (dépenses)
+CREATE TABLE IF NOT EXISTS sorties (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    montant DECIMAL(10,2) NOT NULL,
+    motif VARCHAR(255) NOT NULL,
+    type ENUM('normal','transaction') NOT NULL DEFAULT 'normal',
+    date_sortie DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
 -- Ajout d'un utilisateur administrateur par défaut
 INSERT INTO users (username, password, role) VALUES ('admin', '$2y$10$abcdefghijklmnopqrstuv', 'admin') ON DUPLICATE KEY UPDATE username=username;
 

@@ -21,6 +21,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user_id = $_SESSION['user_id'] ?? 1;
     $product_ids = $_POST['product_id'] ?? [];
     $quantities = $_POST['quantity'] ?? [];
+    $new_prices = $_POST['new_price'] ?? [];
+    $imei = $_POST['imei'] ?? '';
+    $garanti = $_POST['garanti'] ?? '';
     $total = 0;
     $valid = $client_id && !empty($product_ids);
     $vente = [];
@@ -38,19 +41,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stock_error = true;
             $valid = false;
         }
+        // Utiliser le nouveau prix saisi ou le prix par défaut
+        $applied_price = isset($new_prices[$pid]) && $new_prices[$pid] !== '' ? floatval($new_prices[$pid]) : $product_map[$pid]['price'];
         if ($valid) {
-            $total += $product_map[$pid]['price'] * $qte;
+            $total += $applied_price * $qte;
             $vente[] = [
                 'id' => $pid,
                 'qte' => $qte,
-                'price' => $product_map[$pid]['price']
+                'price' => $applied_price
             ];
         }
     }
     if ($valid && !$stock_error) {
         $pdo->beginTransaction();
-        $stmt = $pdo->prepare('INSERT INTO sales (client_id, user_id, total) VALUES (?, ?, ?)');
-        $stmt->execute([$client_id, $user_id, $total]);
+        $stmt = $pdo->prepare('INSERT INTO sales (client_id, user_id, total, imei, garanti) VALUES (?, ?, ?, ?, ?)');
+        $stmt->execute([$client_id, $user_id, $total, $imei, $garanti]);
         $sale_id = $pdo->lastInsertId();
         $stmt_detail = $pdo->prepare('INSERT INTO sale_details (sale_id, product_id, quantity, price) VALUES (?, ?, ?, ?)');
         foreach ($vente as $v) {
@@ -140,17 +145,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <?php endforeach; ?>
                             </select>
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label">Adresse IMEI de l'appareil</label>
+                            <input type="text" name="imei" class="form-control" placeholder="Saisir l'adresse IMEI" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Garantie</label>
+                            <input type="text" name="garanti" class="form-control" placeholder="Ex: 6 mois, 1 an...">
+                        </div>
                         <fieldset class="mb-3">
                             <legend>Produits</legend>
-                            <?php foreach ($products as $product): ?>
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="checkbox" name="product_id[]" value="<?= $product['id'] ?>" id="prod<?= $product['id'] ?>">
-                                    <label class="form-check-label" for="prod<?= $product['id'] ?>">
-                                        <?= htmlspecialchars($product['name']) ?> (<?= $product['price'] ?> $ | Stock: <?= $product['quantity'] ?>)
-                                    </label>
-                                    <input type="number" name="quantity[<?= $product['id'] ?>]" min="1" max="<?= $product['quantity'] ?>" class="form-control d-inline-block ms-2" style="width:100px;" placeholder="Qté">
-                                </div>
-                            <?php endforeach; ?>
+                            <div class="table-responsive">
+                                <table class="table table-bordered align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Sélection</th>
+                                            <th>Produit</th>
+                                            <th>Prix actuel</th>
+                                            <th>Prix de vente</th>
+                                            <th>Stock</th>
+                                            <th>Quantité</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    <?php foreach ($products as $product): ?>
+                                        <tr>
+                                            <td><input class="form-check-input" type="checkbox" name="product_id[]" value="<?= $product['id'] ?>" id="prod<?= $product['id'] ?>"></td>
+                                            <td><label for="prod<?= $product['id'] ?>"><?= htmlspecialchars($product['name']) ?></label></td>
+                                            <td><?= $product['price'] ?> $</td>
+                                            <td><input type="number" step="0.01" min="0" name="new_price[<?= $product['id'] ?>]" class="form-control" value="<?= $product['price'] ?>" style="width:110px;" placeholder="Prix de vente"></td>
+                                            <td><?= $product['quantity'] ?></td>
+                                            <td><input type="number" name="quantity[<?= $product['id'] ?>]" min="1" max="<?= $product['quantity'] ?>" class="form-control" style="width:90px;" placeholder="Qté"></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
                         </fieldset>
                         <button type="submit" class="btn btn-primary w-100">Enregistrer la vente</button>
                     </form>

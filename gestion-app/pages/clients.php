@@ -59,6 +59,7 @@ $clients = $stmt->fetchAll();
             <a href="invoices.php"><i class="bi bi-receipt"></i> Factures</a>
             <a href="clients.php" class="active"><i class="bi bi-people"></i> Clients</a>
             <a href="reports.php"><i class="bi bi-bar-chart"></i> Rapports</a>
+            <a href="stock.php"><i class="bi bi-archive"></i> Stock</a>
             <a href="../logout.php"><i class="bi bi-box-arrow-right"></i> Déconnexion</a>
         </nav>
         <main class="col-md-10 ms-sm-auto px-4">

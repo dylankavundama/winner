@@ -76,15 +76,12 @@ foreach ($chart_data as $row) {
                 <i class="bi bi-person-circle"></i><br>
                 <span><?= htmlspecialchars($_SESSION['username']) ?></span>
             </div>
-            <a href="dashboard.php" class="active"><i class="bi bi-speedometer2"></i> Dashboard</a>
+            <a href="agent.php" class="active"><i class="bi bi-speedometer2"></i> Dashboard</a>
             <a href="products.php"><i class="bi bi-box"></i> Produits</a>
             <a href="sales.php"><i class="bi bi-cart"></i> Ventes</a>
             <a href="invoices.php"><i class="bi bi-receipt"></i> Factures</a>
             <a href="clients.php"><i class="bi bi-people"></i> Clients</a>
-            <a href="reports.php"><i class="bi bi-bar-chart"></i> Rapports</a>
-            <a href="stock.php"><i class="bi bi-archive"></i> Stock</a>
-            <a href="benefice.php"><i class="bi bi-cash-coin"></i> Bénéfice</a>
-            <a href="sortie.php"><i class="bi bi-arrow-down-circle"></i> Sorties</a>
+    
             <a href="../logout.php"><i class="bi bi-box-arrow-right"></i> Déconnexion</a>
         </nav>
         <main class="col-md-10 ms-sm-auto px-4">
@@ -128,13 +125,7 @@ foreach ($chart_data as $row) {
                         <div class="label">Total ventes</div>
                     </div>
                 </div>
-                <div class="dashboard-card bg-danger">
-                    <span class="icon"><i class="bi bi-cash-stack"></i></span>
-                    <div>
-                        <div class="value"><?= number_format($total_expense,2) ?> $</div>
-                        <div class="label">Total dépenses</div>
-                    </div>
-                </div>
+ 
             </div>
             <div class="card mb-4">
                 <div class="card-header bg-white"><b>Ventes par mois</b></div>

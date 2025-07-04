@@ -25,7 +25,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
         $_SESSION['role'] = $user['role'];
-        header('Location: pages/dashboard.php');
+        if ($user['role'] === 'admin') {
+            header('Location: pages/dashboard.php');
+        } else {
+            header('Location: pages/agent.php');
+        }
         exit;
     } else {
         $message = 'Identifiants invalides.';
