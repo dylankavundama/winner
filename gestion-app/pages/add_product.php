@@ -10,10 +10,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = $_POST['name'] ?? '';
     $description = $_POST['description'] ?? '';
     $price = $_POST['price'] ?? 0;
+    $prix_vente = $_POST['prix_vente'] ?? 0;
     $quantity = $_POST['quantity'] ?? 0;
-    if ($name && $price >= 0 && $quantity >= 0) {
-        $stmt = $pdo->prepare('INSERT INTO products (name, description, price, quantity) VALUES (?, ?, ?, ?)');
-        $stmt->execute([$name, $description, $price, $quantity]);
+    if ($name && $price >= 0 && $prix_vente >= 0 && $quantity >= 0) {
+        $stmt = $pdo->prepare('INSERT INTO products (name, description, price, prix_vente, quantity) VALUES (?, ?, ?, ?, ?)');
+        $stmt->execute([$name, $description, $price, $prix_vente, $quantity]);
         $message = 'Produit ajouté avec succès!';
     } else {
         $message = 'Veuillez remplir tous les champs correctement.';
@@ -95,6 +96,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="mb-3">
                             <label class="form-label">Prix (€)</label>
                             <input type="number" name="price" step="0.01" min="0" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Prix de vente (€)</label>
+                            <input type="number" name="prix_vente" step="0.01" min="0" class="form-control" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Quantité</label>

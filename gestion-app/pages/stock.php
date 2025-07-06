@@ -134,6 +134,7 @@ $products = $stmt->fetchAll();
             <a href="reports.php"><i class="bi bi-bar-chart"></i> Rapports</a>
             <a href="stock.php" class="active"><i class="bi bi-archive"></i> Stock</a>
             <a href="benefice.php"><i class="bi bi-cash-coin"></i> Bénéfice</a>
+            <a href="livre_caisse.php"><i class="bi bi-journal-richtext"></i> Livre de caisse</a>
             <a href="sortie.php"><i class="bi bi-arrow-down-circle"></i> Sorties</a>
             <a href="../logout.php"><i class="bi bi-box-arrow-right"></i> Déconnexion</a>
         </nav>

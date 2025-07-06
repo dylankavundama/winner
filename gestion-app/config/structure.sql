@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS products (
     name VARCHAR(100) NOT NULL,
     description TEXT,
     price DECIMAL(10,2) NOT NULL,
+    prix_vente DECIMAL(10,2) NOT NULL DEFAULT 0,
     quantity INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -72,6 +73,16 @@ CREATE TABLE IF NOT EXISTS sorties (
     type ENUM('normal','transaction') NOT NULL DEFAULT 'normal',
     date_sortie DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Table pour le livre de caisse
+CREATE TABLE IF NOT EXISTS caisse (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    numero_recu VARCHAR(50),
+    date DATE,
+    designation VARCHAR(255),
+    entree DECIMAL(10,2) DEFAULT 0,
+    depense DECIMAL(10,2) DEFAULT 0
 );
 
 -- Ajout d'un utilisateur administrateur par défaut

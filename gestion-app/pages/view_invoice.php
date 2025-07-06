@@ -125,6 +125,46 @@ try {
             font-size: 0.9em;
         }
 
+        /* Status badge styling */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-paid {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .status-unpaid {
+            background-color: #f39c12;
+            color: white;
+        }
+
+        /* Status section styling */
+        .facture-status {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .status-info {
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        .status-info strong {
+            margin-right: 10px;
+            color: #2c3e50;
+        }
+
         /* Details section (company and client) */
         .facture-details {
             display: flex; /* Enable flexbox for side-by-side layout */
@@ -290,7 +330,8 @@ try {
             <img src="../assets/logo.png" alt="Company Logo">
             <h1>Winner Company</h1>
             <h2>Facture #<?= htmlspecialchars($invoice['id']) ?></h2>
-            <p>Date : <?= htmlspecialchars($invoice['invoice_date']) ?> | Statut : Payer</p>
+            <p>Date : <?= htmlspecialchars($invoice['invoice_date']) ?> | 
+               Statut : <span class="status-badge <?= $invoice['status'] === 'payée' ? 'status-paid' : 'status-unpaid' ?>"><?= htmlspecialchars($invoice['status']) ?></span></p>
         </div>
 
         <div class="facture-details">
@@ -303,6 +344,16 @@ try {
                 <strong>Téléphone :</strong> <?= htmlspecialchars($invoice['phone']) ?><br>
                 <strong>IMEI :</strong> <?= htmlspecialchars($invoice['imei']) ?><br>
                 <strong>Garantie :</strong> <?= htmlspecialchars($invoice['garanti']) ?></p>
+            </div>
+        </div>
+
+        <!-- Status section -->
+        <div class="facture-status">
+            <div class="status-info">
+                <strong>Statut de la facture :</strong>
+                <span class="status-badge <?= $invoice['status'] === 'payée' ? 'status-paid' : 'status-unpaid' ?>">
+                    <?= htmlspecialchars($invoice['status']) ?>
+                </span>
             </div>
         </div>
 

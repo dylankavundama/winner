@@ -22,12 +22,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'Veuillez remplir tous les champs.';
     }
 }
+$date_filter = $_GET['date'] ?? '';
+$month_filter = $_GET['month'] ?? '';
+$year_filter = $_GET['year'] ?? '';
 $type_filter = $_GET['type_filter'] ?? '';
 $sql = 'SELECT s.*, u.username FROM sorties s JOIN users u ON s.user_id = u.id';
+$where = [];
 $params = [];
 if ($type_filter && in_array($type_filter, ['normal','transaction'])) {
-    $sql .= ' WHERE s.type = ?';
+    $where[] = 's.type = ?';
     $params[] = $type_filter;
+}
+if ($date_filter) {
+    $where[] = 'DATE(s.date_sortie) = ?';
+    $params[] = $date_filter;
+}
+if ($month_filter) {
+    $where[] = 'DATE_FORMAT(s.date_sortie, "%Y-%m") = ?';
+    $params[] = $month_filter;
+}
+if ($year_filter) {
+    $where[] = 'YEAR(s.date_sortie) = ?';
+    $params[] = $year_filter;
+}
+if ($where) {
+    $sql .= ' WHERE ' . implode(' AND ', $where);
 }
 $sql .= ' ORDER BY s.date_sortie DESC';
 $stmt = $pdo->prepare($sql);
@@ -52,16 +71,26 @@ $sorties = $stmt->fetchAll();
         .sidebar .user { text-align: center; margin-bottom: 20px; }
         .sidebar .user i { font-size: 2rem; }
         .topbar { background: #fff; border-bottom: 1px solid #eee; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; }
-        .form-card { max-width: 500px; margin: 40px auto; }
-        @media (max-width: 900px) {
-            .sidebar { min-height: auto; position: fixed; left: -220px; top: 0; width: 200px; z-index: 1050; transition: left 0.3s; }
-            .sidebar.open { left: 0; }
-            .sidebar .logo { font-size: 1.2rem; }
-            .main-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0005; z-index: 1040; }
-            .main-overlay.active { display: block; }
-            main { padding-left: 0 !important; }
-            .topbar { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .form-card { margin: 20px 5px; }
+        .main-flex { display: flex; gap: 32px; align-items: flex-start; }
+        .form-card { flex: 1 1 350px; max-width: 400px; margin: 0; box-shadow: 0 2px 16px #0002; border-radius: 12px; background: #fff; border: none; }
+        .list-card { flex: 2 1 600px; box-shadow: 0 2px 16px #0001; border-radius: 12px; background: #fff; border: none; }
+        .section-title { font-size: 1.3rem; font-weight: bold; margin-bottom: 18px; letter-spacing: 1px; }
+        .table thead th { position: sticky; top: 0; background: #f8f9fa; z-index: 1; }
+        .table-striped > tbody > tr:nth-of-type(odd) { background-color: #f2f6fc; }
+        .badge-normal { background: #0d6efd; font-size: 0.95em; }
+        .badge-transaction { background: #ffc107; color: #222; font-size: 0.95em; }
+        @media (max-width: 1100px) {
+            .main-flex { flex-direction: column; gap: 0; }
+            .form-card, .list-card { max-width: 100%; margin: 0 0 24px 0; }
+        }
+        @media (max-width: 600px) {
+            .main-flex { flex-direction: column; gap: 0; }
+            .form-card, .list-card { max-width: 100%; margin: 0 0 18px 0; box-shadow: 0 1px 6px #0001; border-radius: 8px; padding: 10px !important; }
+            .section-title { font-size: 1.05rem; margin-bottom: 12px; }
+            .form-label, .form-control, .form-select, .btn, .badge { font-size: 0.98em !important; }
+            .btn { padding: 8px 0; }
+            .table-responsive { font-size: 0.97em; }
+            .table thead th, .table td { padding: 7px 6px; }
         }
     </style>
 </head>
@@ -91,11 +120,12 @@ $sorties = $stmt->fetchAll();
         </nav>
         <main class="col-md-10 ms-sm-auto px-4">
             <div class="topbar mb-4">
-                <span><i class="bi bi-arrow-down-circle"></i> Ajouter une sortie</span>
+                <span><i class="bi bi-arrow-down-circle"></i> Sorties de caisse</span>
                 <a href="dashboard.php" class="btn btn-outline-secondary btn-add"><i class="bi bi-arrow-left"></i> Retour</a>
             </div>
-            <div class="card form-card">
-                <div class="card-body">
+            <div class="main-flex">
+                <div class="card form-card p-4 mb-4">
+                    <div class="section-title mb-3"><i class="bi bi-plus-circle"></i> Nouvelle sortie</div>
                     <?php if ($message): ?>
                         <div class="alert alert-info text-center"> <?= htmlspecialchars($message) ?> </div>
                     <?php endif; ?>
@@ -119,46 +149,74 @@ $sorties = $stmt->fetchAll();
                                 <option value="transaction">Transaction</option>
                             </select>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">Enregistrer la sortie</button>
+                        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save"></i> Enregistrer la sortie</button>
                     </form>
-                    <form method="get" class="mb-3" style="max-width:300px">
-                        <label for="type_filter" class="form-label">Filtrer par type :</label>
-                        <select name="type_filter" id="type_filter" class="form-select" onchange="this.form.submit()">
-                            <option value=""<?= $type_filter===''?' selected':'' ?>>Tous</option>
-                            <option value="normal"<?= $type_filter==='normal'?' selected':'' ?>>Normal</option>
-                            <option value="transaction"<?= $type_filter==='transaction'?' selected':'' ?>>Transaction</option>
-                        </select>
+                </div>
+                <div class="list-card card p-4 mb-4">
+                    <div class="section-title mb-3"><i class="bi bi-list"></i> Liste des sorties</div>
+                    <form method="get" class="mb-3 row g-2 align-items-end" style="max-width:700px">
+                        <div class="col-auto">
+                            <label for="type_filter" class="form-label">Type :</label>
+                            <select name="type_filter" id="type_filter" class="form-select">
+                                <option value=""<?= $type_filter===''?' selected':'' ?>>Tous</option>
+                                <option value="normal"<?= $type_filter==='normal'?' selected':'' ?>>Normal</option>
+                                <option value="transaction"<?= $type_filter==='transaction'?' selected':'' ?>>Transaction</option>
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <label for="date" class="form-label mb-0">Jour :</label>
+                            <input type="date" id="date" name="date" class="form-control" value="<?= htmlspecialchars($date_filter) ?>">
+                        </div>
+                        <div class="col-auto">
+                            <label for="month" class="form-label mb-0">Mois :</label>
+                            <input type="month" id="month" name="month" class="form-control" value="<?= htmlspecialchars($month_filter) ?>">
+                        </div>
+                        <div class="col-auto">
+                            <label for="year" class="form-label mb-0">Année :</label>
+                            <input type="number" id="year" name="year" class="form-control" min="2000" max="2100" placeholder="Année" value="<?= htmlspecialchars($year_filter) ?>">
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-outline-primary">Filtrer</button>
+                            <a href="sortie.php" class="btn btn-outline-secondary">Réinitialiser</a>
+                        </div>
                     </form>
                     <?php if ($sorties): ?>
-                    <div class="card mt-4">
-                        <div class="card-header bg-white"><b>Liste des sorties</b></div>
-                        <div class="card-body table-responsive">
-                            <table class="table table-hover align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Utilisateur</th>
-                                        <th>Montant</th>
-                                        <th>Motif</th>
-                                        <th>Type</th>
-                                        <th>Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                <?php foreach ($sorties as $s): ?>
-                                    <tr>
-                                        <td><?= $s['id'] ?></td>
-                                        <td><?= htmlspecialchars($s['username']) ?></td>
-                                        <td><?= number_format($s['montant'],2) ?> $</td>
-                                        <td><?= htmlspecialchars($s['motif']) ?></td>
-                                        <td><?= htmlspecialchars($s['type']) ?></td>
-                                        <td><?= $s['date_sortie'] ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped align-middle">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Utilisateur</th>
+                                    <th>Montant</th>
+                                    <th>Motif</th>
+                                    <th>Type</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            <?php foreach ($sorties as $s): ?>
+                                <tr>
+                                    <td><?= $s['id'] ?></td>
+                                    <td><?= htmlspecialchars($s['username']) ?></td>
+                                    <td><?= number_format($s['montant'],2) ?> $</td>
+                                    <td><?= htmlspecialchars($s['motif']) ?></td>
+                                    <td>
+                                        <?php if ($s['type']==='normal'): ?>
+                                            <span class="badge badge-normal">Normal</span>
+                                        <?php elseif ($s['type']==='transaction'): ?>
+                                            <span class="badge badge-transaction">Transaction</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-secondary">?</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?= $s['date_sortie'] ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     </div>
+                    <?php else: ?>
+                        <div class="alert alert-warning text-center">Aucune sortie enregistrée.</div>
                     <?php endif; ?>
                 </div>
             </div>

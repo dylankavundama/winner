@@ -29,6 +29,8 @@ $invoices = $stmt->fetchAll();
         .table thead { background: #007bff; color: #fff; }
         .btn-add { float: right; margin-bottom: 10px; }
         .table-responsive { overflow-x: auto; }
+        .badge { font-size: 0.8em; }
+        .status-cell { display: flex; align-items: center; gap: 8px; }
         @media (max-width: 900px) {
             .sidebar { min-height: auto; position: fixed; left: -220px; top: 0; width: 200px; z-index: 1050; transition: left 0.3s; }
             .sidebar.open { left: 0; }
@@ -87,7 +89,16 @@ $invoices = $stmt->fetchAll();
                             <td><?= htmlspecialchars($invoice['client_name']) ?></td>
                             <td><?= $invoice['invoice_date'] ?></td>
                             <td><?= $invoice['amount'] ?> $</td>
-                            <td><?= $invoice['status'] ?></td>
+                            <td class="status-cell">
+                                <span class="badge <?= $invoice['status'] === 'payée' ? 'bg-success' : 'bg-warning' ?>">
+                                    <?= $invoice['status'] ?>
+                                </span>
+                                <button class="btn btn-sm btn-outline-secondary" 
+                                        onclick="changeStatus(<?= $invoice['id'] ?>, '<?= $invoice['status'] === 'payée' ? 'impayée' : 'payée' ?>')"
+                                        title="Changer le statut">
+                                    <i class="bi bi-arrow-repeat"></i>
+                                </button>
+                            </td>
                             <td>
                                 <a href="view_invoice.php?id=<?= $invoice['id'] ?>" class="btn btn-sm btn-outline-info">Voir</a>
                                 <a href="view_invoice.php?id=<?= $invoice['id'] ?>&print=1" target="_blank" class="btn btn-sm btn-outline-success">Imprimer</a>
@@ -123,6 +134,64 @@ function toggleSidebar(open) {
 document.querySelectorAll('#sidebarMenu a').forEach(a => {
     a.addEventListener('click', () => toggleSidebar(false));
 });
+
+// Fonction pour changer le statut d'une facture
+function changeStatus(invoiceId, newStatus) {
+    if (!confirm('Êtes-vous sûr de vouloir changer le statut de cette facture ?')) {
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('invoice_id', invoiceId);
+    formData.append('status', newStatus);
+    
+    fetch('update_invoice_status.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Afficher une notification de succès
+            showNotification(data.message, 'success');
+            // Recharger la page après un délai
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            showNotification(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showNotification('Erreur lors de la mise à jour', 'error');
+    });
+}
+
+// Fonction pour afficher les notifications
+function showNotification(message, type) {
+    // Supprimer les notifications existantes
+    const existingNotifications = document.querySelectorAll('.notification');
+    existingNotifications.forEach(notification => notification.remove());
+    
+    // Créer la notification
+    const notification = document.createElement('div');
+    notification.className = `notification alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-suppression après 5 secondes
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
 </script>
 </body>
 </html> 

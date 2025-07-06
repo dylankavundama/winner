@@ -18,12 +18,21 @@ if (!$product) {
     header('Location: products.php');
     exit;
 }
+$error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['confirm']) && $_POST['confirm'] === 'oui') {
-        $stmt = $pdo->prepare('DELETE FROM products WHERE id = ?');
-        $stmt->execute([$id]);
-        header('Location: products.php');
-        exit;
+        try {
+            $stmt = $pdo->prepare('DELETE FROM products WHERE id = ?');
+            $stmt->execute([$id]);
+            header('Location: products.php?msg=deleted');
+            exit;
+        } catch (PDOException $e) {
+            if ($e->getCode() == '23000') {
+                $error = "Impossible de supprimer ce produit car il est utilisé dans une ou plusieurs ventes.";
+            } else {
+                $error = "Erreur lors de la suppression du produit.";
+            }
+        }
     } else {
         header('Location: products.php');
         exit;
@@ -92,6 +101,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="card-body text-center">
                     <h5>Voulez-vous vraiment supprimer le produit suivant ?</h5>
                     <p><strong><?= htmlspecialchars($product['name']) ?></strong></p>
+                    <?php if ($error): ?>
+                        <div class="alert alert-danger"> <?= $error ?> </div>
+                    <?php endif; ?>
                     <form method="post" class="d-inline">
                         <input type="hidden" name="confirm" value="oui">
                         <button type="submit" class="btn btn-danger">Oui, supprimer</button>

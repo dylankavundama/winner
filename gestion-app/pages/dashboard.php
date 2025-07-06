@@ -11,7 +11,7 @@ $total_products = $pdo->query('SELECT COUNT(*) FROM products')->fetchColumn();
 $total_sales = $pdo->query('SELECT COUNT(*) FROM sales')->fetchColumn();
 $total_invoices = $pdo->query('SELECT COUNT(*) FROM invoices')->fetchColumn();
 $total_sales_amount = $pdo->query('SELECT IFNULL(SUM(total),0) FROM sales')->fetchColumn();
-$total_expense = 1073622.63; // Exemple statique
+$total_chiffre_affaire = $pdo->query('SELECT IFNULL(SUM(quantity * price),0) FROM products')->fetchColumn();
 // Pour le graphique : ventes par mois
 $chart_data = $pdo->query("SELECT DATE_FORMAT(sale_date, '%b') as month, SUM(total) as total FROM sales GROUP BY month ORDER BY MIN(sale_date)")->fetchAll();
 $months = [];
@@ -131,8 +131,8 @@ foreach ($chart_data as $row) {
                 <div class="dashboard-card bg-danger">
                     <span class="icon"><i class="bi bi-cash-stack"></i></span>
                     <div>
-                        <div class="value"><?= number_format($total_expense,2) ?> $</div>
-                        <div class="label">Total dépenses</div>
+                        <div class="value"><?= number_format($total_chiffre_affaire,2) ?> $</div>
+                        <div class="label">Chiffre d'affaire</div>
                     </div>
                 </div>
             </div>

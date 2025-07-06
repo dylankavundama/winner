@@ -49,6 +49,29 @@ foreach ($ventes as $v) {
 // New: Calculate exact profit
 $benefice_exact = $benefice_brut - $depenses;
 
+// Récupérer les sorties de type 'normal' sur la même période
+$depenses = 0;
+$sortie_where = [];
+$sortie_params = [];
+if ($date_filter) {
+    $sortie_where[] = 'DATE(date_sortie) = ?';
+    $sortie_params[] = $date_filter;
+}
+if ($month_filter) {
+    $sortie_where[] = 'DATE_FORMAT(date_sortie, "%Y-%m") = ?';
+    $sortie_params[] = $month_filter;
+}
+if ($year_filter) {
+    $sortie_where[] = 'YEAR(date_sortie) = ?';
+    $sortie_params[] = $year_filter;
+}
+$sortie_where[] = 'type = ?';
+$sortie_params[] = 'normal';
+$sortie_sql = 'SELECT SUM(montant) as total FROM sorties ' . ($sortie_where ? ('WHERE ' . implode(' AND ', $sortie_where)) : '');
+$stmt_sortie = $pdo->prepare($sortie_sql);
+$stmt_sortie->execute($sortie_params);
+$depenses = $stmt_sortie->fetchColumn() ?: 0;
+
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -105,6 +128,7 @@ $benefice_exact = $benefice_brut - $depenses;
             <a href="reports.php"><i class="bi bi-bar-chart"></i> Rapports</a>
             <a href="stock.php"><i class="bi bi-archive"></i> Stock</a>
             <a href="benefice.php" class="active"><i class="bi bi-cash-coin"></i> Bénéfice</a>
+            <a href="livre_caisse.php"><i class="bi bi-journal-richtext"></i> Livre de caisse</a>
             <a href="../logout.php"><i class="bi bi-box-arrow-right"></i> Déconnexion</a>
         </nav>
         <main class="col-md-10 ms-sm-auto px-4">
@@ -126,7 +150,7 @@ $benefice_exact = $benefice_brut - $depenses;
                 </div>
                 <div class="col-auto">
                     <label for="depenses" class="form-label mb-0">Dépenses :</label>
-                    <input type="number" id="depenses" name="depenses" class="form-control" step="0.01" value="<?= htmlspecialchars($depenses) ?>" placeholder="Saisir les dépenses">
+                    <input type="number" id="depenses" name="depenses" class="form-control" step="0.01" value="<?= htmlspecialchars($depenses) ?>" placeholder="Saisir les dépenses" disabled>
                 </div>
                 <div class="col-auto">
                     <button type="submit" class="btn btn-outline-primary">Filtrer et Calculer</button>
