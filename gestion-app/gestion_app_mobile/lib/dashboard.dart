@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:gestion_app_mobile/constants.dart';
 import 'package:gestion_app_mobile/main.dart';
+import 'package:gestion_app_mobile/vente_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:fl_chart/fl_chart.dart';
@@ -148,6 +149,18 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: (){
+
+
+            Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const VentePage()),
+                        );
+        },
+        child: const Icon(Icons.add),
+        tooltip: 'Ajouter un client',
+      ) ,
       appBar: AppBar(
         title: const Text(
           'Tableau de bord du POS',
@@ -183,9 +196,9 @@ class _DashboardPageState extends State<DashboardPage> {
                 )
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
                       _buildUserInfoCard(widget.loggedInUsername),
                       const SizedBox(height: 30),
 
@@ -209,7 +222,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             mainAxisSpacing: 20,
                             crossAxisSpacing: 20,
                             childAspectRatio: 1.3,
-                            children: [
+              children: [
                               _buildStatCard(
                                   'Clients',
                                   totalClients.toString(),
@@ -230,16 +243,16 @@ class _DashboardPageState extends State<DashboardPage> {
                                   totalInvoices.toString(),
                                   Icons.receipt_long_outlined,
                                   Colors.orange),
-                              _buildStatCard(
+                _buildStatCard(
                                   'Total des ventes',
-                                  '${totalSalesAmount.toStringAsFixed(2)} €',
+                    '${totalSalesAmount.toStringAsFixed(2)} €',
                                   Icons.payments_outlined,
-                                  Colors.purple),
-                              _buildStatCard(
+                    Colors.purple),
+                _buildStatCard(
                                   'Chiffre d\'affaires',
-                                  '${totalChiffreAffaire.toStringAsFixed(2)} €',
+                    '${totalChiffreAffaire.toStringAsFixed(2)} €',
                                   Icons.area_chart_outlined,
-                                  Colors.red),
+                    Colors.red),
                             ],
                           );
                         },
@@ -482,13 +495,13 @@ class _DashboardPageState extends State<DashboardPage> {
             Icon(Icons.person_pin_circle, size: 60, color: Colors.blueGrey[100]),
             const SizedBox(width: 20),
             Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 Text(
                   username,
                   style: const TextStyle(
                     fontSize: 24,
-                    fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                 ),

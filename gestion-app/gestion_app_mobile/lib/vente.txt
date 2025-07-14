@@ -1,0 +1,793 @@
+// lib/pages/vente_page.dart
+import 'package:flutter/material.dart';
+import 'package:gestion_app_mobile/client_model.dart';
+import 'package:gestion_app_mobile/constants.dart';
+import 'package:gestion_app_mobile/main.dart'; // Assuming LoginPage is here
+import 'package:gestion_app_mobile/product_model.dart'; // Your Product and SaleProduct models
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart'; // For currency formatting
+
+class VentePage extends StatefulWidget {
+  const VentePage({Key? key}) : super(key: key);
+
+  @override
+  State<VentePage> createState() => _VentePageState();
+}
+
+class _VentePageState extends State<VentePage> {
+  final _formKey = GlobalKey<FormState>();
+  String? _phpSessionCookie;
+  bool _isLoading = true;
+  String? _errorMessage;
+  String? _successMessage;
+
+  // Form fields
+  List<Client> _clients = [];
+  Client? _selectedClient;
+  final TextEditingController _imeiController = TextEditingController();
+  final TextEditingController _garantiController = TextEditingController();
+
+  // Selected products for the sale
+  List<SaleProduct> _selectedProducts = [];
+
+  // Price formatter
+  final NumberFormat _currencyFormatter = NumberFormat.currency(
+    locale: 'fr_FR',
+    symbol: '€', // Or "$", "FC", etc., based on your currency
+    decimalDigits: 2,
+  );
+
+  List<Product> _allProducts = []; // Used for the dropdown
+  Product?
+      _selectedProductDropdown; // The currently selected item in the dropdown
+
+  @override
+  void initState() {
+    super.initState();
+    // Load session and then fetch data
+    _loadSessionAndFetchInitialData();
+  }
+
+  @override
+  void dispose() {
+    _imeiController.dispose();
+    _garantiController.dispose();
+    super.dispose();
+  }
+
+  // Consolidated function to load session and fetch initial data
+  Future<void> _loadSessionAndFetchInitialData() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      _successMessage = null;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _phpSessionCookie = prefs.getString('phpSessionCookie');
+
+      if (_phpSessionCookie == null || _phpSessionCookie!.isEmpty) {
+        // If session is not found, navigate to login
+        _navigateToLogin("Session non trouvée. Veuillez vous reconnecter.");
+        return;
+      }
+
+      // Fetch clients and products concurrently or sequentially
+      // Fetch clients first, as it might be a quicker call
+      await _fetchClients();
+      // Then fetch all products
+      await _fetchAllProducts();
+    } catch (e) {
+      setState(() {
+        _errorMessage = "Erreur lors du chargement initial des données: $e";
+      });
+      print("Error loading initial data: $e");
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _fetchClients() async {
+    // Only attempt if session cookie is available
+    if (_phpSessionCookie == null) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse(ApiConstants.clientsApi),
+        headers: {'Cookie': _phpSessionCookie!}, // Include the cookie
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> clientJson = json.decode(response.body);
+        setState(() {
+          _clients = clientJson.map((json) => Client.fromJson(json)).toList();
+        });
+      } else if (response.statusCode == 401) {
+        _navigateToLogin("Session expirée. Veuillez vous reconnecter.");
+      } else {
+        setState(() {
+          _errorMessage = "Échec du chargement des clients: ${response.body}";
+        });
+        print(
+            "Failed to load clients: ${response.statusCode}, Body: ${response.body}");
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = "Erreur de connexion au serveur (clients): $e";
+      });
+      print("Error fetching clients: $e");
+    }
+  }
+
+  // CORRECTED: Fetch all products for the dropdown
+  // This function now correctly fetches products from the '/api/products.php' endpoint
+  // and parses them into the _allProducts list.
+  Future<void> _fetchAllProducts() async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            'http://192.168.1.69/winner/gestion-app/gestion-app/api/products.php'),
+        // headers: {'Cookie': _phpSessionCookie!}, // Uncomment if products.php requires session
+      );
+
+      print('fetchAllProducts Status Code: ${response.statusCode}');
+      print('fetchAllProducts Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData =
+            json.decode(response.body); // DECODE AS A MAP FIRST
+
+        if (responseData['success'] == true &&
+            responseData['products'] is List) {
+          // CHECK 'success' AND IF 'products' IS A LIST
+          final List<dynamic> productListJson =
+              responseData['products']; // ACCESS THE 'products' KEY
+          setState(() {
+            _allProducts =
+                productListJson.map((json) => Product.fromJson(json)).toList();
+          });
+          print('Number of products fetched: ${_allProducts.length}');
+        } else {
+          // Handle cases where 'success' is false or 'products' is not a list
+          setState(() {
+            _errorMessage = responseData['message'] ??
+                "Format de réponse inattendu pour les produits.";
+          });
+          print(
+              "API Response Error: ${responseData['message'] ?? 'Unknown API error'}");
+        }
+      } else if (response.statusCode == 401) {
+        _navigateToLogin("Session expirée. Veuillez vous reconnecter.");
+      } else {
+        setState(() {
+          _errorMessage =
+              "Échec du chargement des produits (Status: ${response.statusCode}). Réponse: ${response.body}";
+        });
+        print(
+            "Failed to load products: ${response.statusCode}, Body: ${response.body}");
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage =
+            'Erreur de connexion lors de la récupération des produits: $e';
+      });
+      print('Erreur lors de la récupération des produits: $e');
+    }
+  }
+
+  // Corrected: Fetch a single product by its ID via the product search API
+  // The previous getProductApi constant might not exist; reuse the product search API.
+  Future<Product?> _fetchProductById(int productId) async {
+    if (_phpSessionCookie == null) return null;
+
+    try {
+      final response = await http.get(
+        // Assuming your product search API can handle an exact ID query or will return all and you can filter.
+        // A better approach would be a dedicated /api/product_by_id.php endpoint.
+        // Given your PHP, the ajax_search API should return a list, so we'll search for it there.
+        Uri.parse(
+            '${ApiConstants.addSaleApi}?ajax_search=true&query=$productId'),
+        headers: {'Cookie': _phpSessionCookie!},
+      );
+
+      print(
+          'fetchProductById Status Code for ID $productId: ${response.statusCode}');
+      print(
+          'fetchProductById Response Body for ID $productId: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true && data['products'] != null) {
+          // Find the product by exact ID match
+          final List<dynamic> productJson = data['products'];
+          final List<Product> foundProducts =
+              productJson.map((json) => Product.fromJson(json)).toList();
+          return foundProducts.firstWhere((p) => p.id == productId,
+              orElse: () => throw Exception('Product not found after search'));
+        } else {
+          print(
+              "Product API error for ID $productId: ${data['message'] ?? 'No product data.'}");
+          return null;
+        }
+      } else if (response.statusCode == 401) {
+        _navigateToLogin("Session expirée. Veuillez vous reconnecter.");
+        return null;
+      } else {
+        print(
+            "Failed to fetch product by ID ${response.statusCode}, Body: ${response.body}");
+        return null;
+      }
+    } catch (e) {
+      print('Erreur lors de la récupération du produit par ID: $e');
+      return null;
+    }
+  }
+
+  void _addProductToSale(Product product) async {
+    // Refresh product info to get the latest stock (quantity) and price from the database
+    final freshProduct = await _fetchProductById(product.id);
+    if (freshProduct == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text(
+                  'Impossible de récupérer les infos du produit. Il pourrait ne plus exister ou le stock est à jour.')),
+        );
+      }
+      return;
+    }
+
+    // Check if the product is already in the list
+    int existingIndex =
+        _selectedProducts.indexWhere((p) => p.id == freshProduct.id);
+
+    if (existingIndex == -1) {
+      // Add new product
+      if (freshProduct.quantity > 0) {
+        // Only add if stock is available
+        setState(() {
+          _selectedProducts.add(SaleProduct(
+            id: freshProduct.id,
+            name: freshProduct.name,
+            prixVente: freshProduct.prixVente,
+            quantity: freshProduct.quantity, // This is the available stock
+            quantityToSell: 1, // Default quantity to sell
+            priceOverride: freshProduct.prixVente, // Default price
+          ));
+        });
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text('${freshProduct.name} est en rupture de stock.')),
+          );
+        }
+      }
+    } else {
+      // If product exists, increment quantity if stock allows
+      final existingSaleProduct = _selectedProducts[existingIndex];
+      if (existingSaleProduct.quantityToSell < existingSaleProduct.quantity) {
+        setState(() {
+          existingSaleProduct.quantityToSell++;
+        });
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content:
+                    Text('Stock maximal atteint pour ${freshProduct.name}.')),
+          );
+        }
+      }
+    }
+    // Clear dropdown selection after adding
+    setState(() {
+      _selectedProductDropdown = null;
+    });
+  }
+
+  void _removeProductFromSale(int productId) {
+    setState(() {
+      _selectedProducts.removeWhere((p) => p.id == productId);
+    });
+  }
+
+  void _updateProductQuantity(int productId, String value) {
+    int? newQty = int.tryParse(value);
+    setState(() {
+      final product = _selectedProducts.firstWhere((p) => p.id == productId);
+      if (newQty != null && newQty >= 0) {
+        // Allow 0 to remove product
+        if (newQty <= product.quantity) {
+          product.quantityToSell = newQty;
+          if (newQty == 0) {
+            _removeProductFromSale(productId); // Remove if quantity is 0
+          }
+        } else {
+          product.quantityToSell = product.quantity; // Cap at available stock
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content: Text(
+                      'Quantité maximale pour ${product.name} est ${product.quantity}.')),
+            );
+          }
+        }
+      } else {
+        product.quantityToSell =
+            1; // Default to 1 if invalid input, or handle as error
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Quantité invalide.')),
+          );
+        }
+      }
+    });
+  }
+
+  void _updateProductPrice(int productId, String value) {
+    double? newPrice = double.tryParse(value);
+    setState(() {
+      final product = _selectedProducts.firstWhere((p) => p.id == productId);
+      if (newPrice != null && newPrice >= 0) {
+        // Price cannot be negative
+        product.priceOverride = newPrice;
+      } else {
+        // Revert to original if invalid input, or show error
+        product.priceOverride = product.prixVente;
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('Prix invalide. Revenir au prix par défaut.')),
+          );
+        }
+      }
+    });
+  }
+
+  double get _totalSaleAmount {
+    return _selectedProducts.fold(
+        0.0, (sum, product) => sum + product.subtotal);
+  }
+
+  Future<void> _submitSale() async {
+    if (!_formKey.currentState!.validate()) {
+      setState(() {
+        _errorMessage = "Veuillez corriger les erreurs dans le formulaire.";
+        _successMessage = null;
+      });
+      return;
+    }
+    if (_selectedProducts.isEmpty) {
+      setState(() {
+        _errorMessage = "Veuillez ajouter au moins un produit à la vente.";
+        _successMessage = null;
+      });
+      return;
+    }
+    if (_selectedClient == null) {
+      setState(() {
+        _errorMessage = "Veuillez sélectionner un client.";
+        _successMessage = null;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      _successMessage = null;
+    });
+
+    try {
+      // Prepare data for PHP POST request, matching your PHP script's $_POST structure
+      // For arrays, PHP expects keys like product_id[0], product_id[1] or product_id[]
+      // Using a Map for quantities and prices keyed by product ID string is suitable for PHP $_POST.
+      // The http.post body handles this correctly when it's a Map<String, String>.
+      Map<String, String> postData = {
+        'client_id': _selectedClient!.id.toString(),
+        'imei': _imeiController.text.trim(),
+        'garanti': _garantiController.text.trim(),
+      };
+
+      // Add product details using PHP's expected array notation
+      // Using product_id[<id>], quantity[<id>], new_price[<id>]
+      // The http package will flatten these maps into the correct x-www-form-urlencoded format
+      // E.g., product_id[123]=123&quantity[123]=2&new_price[123]=15.00
+      for (var p in _selectedProducts) {
+        postData['product_id[${p.id}]'] = p.id.toString();
+        postData['quantity[${p.id}]'] = p.quantityToSell.toString();
+        postData['new_price[${p.id}]'] = p.priceOverride
+            .toStringAsFixed(2); // Ensure two decimal places for price
+      }
+
+      final response = await http.post(
+        Uri.parse(ApiConstants.addSaleApi),
+        headers: {
+          'Content-Type':
+              'application/x-www-form-urlencoded', // Important for PHP $_POST parsing
+          'Cookie': _phpSessionCookie!,
+        },
+        body: postData, // http package handles url-encoding Map<String, String>
+      );
+
+      print('Sale submission status: ${response.statusCode}');
+      print('Sale submission body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 400) {
+        // PHP returns 400 for validation errors
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          setState(() {
+            _successMessage =
+                data['message'] ?? "Vente enregistrée avec succès!";
+            _errorMessage = null;
+            // Clear form after successful submission
+            _selectedClient = null;
+            _imeiController.clear();
+            _garantiController.clear();
+            _selectedProducts.clear();
+            _selectedProductDropdown = null; // Clear dropdown selection
+            _fetchAllProducts(); // Refresh product list after sale to reflect new stock
+          });
+        } else {
+          setState(() {
+            _errorMessage =
+                data['message'] ?? "Échec de l'enregistrement de la vente.";
+            _successMessage = null;
+          });
+        }
+      } else if (response.statusCode == 401) {
+        _navigateToLogin(
+            "Non autorisé. Session expirée ou invalide. Veuillez vous reconnecter.");
+      } else {
+        setState(() {
+          _errorMessage =
+              "Erreur du serveur lors de l'enregistrement de la vente: ${response.statusCode}. Réponse: ${response.body}";
+          _successMessage = null;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = "Erreur de connexion: $e";
+        _successMessage = null;
+      });
+      print('Error during sale submission: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _navigateToLogin(String message) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('phpSessionCookie');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+        (route) => false,
+      );
+    }
+  }
+
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: const Text('Ajouter une Vente', style: TextStyle(color: Colors.white)),
+      backgroundColor: Colors.blueGrey[800],
+      iconTheme: const IconThemeData(color: Colors.white),
+    ),
+    body: _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : _allProducts.isEmpty
+            ? const Center(child: Text("Aucun produit disponible"))
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Error/Success messages
+                      if (_errorMessage != null)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.red[100],
+                            border: Border.all(color: Colors.red.shade400),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _errorMessage!,
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      if (_successMessage != null)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.green[100],
+                            border: Border.all(color: Colors.green.shade400),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _successMessage!,
+                            style: const TextStyle(color: Colors.green),
+                          ),
+                        ),
+
+                      // Client Dropdown
+                      DropdownButtonFormField<Client>(
+                        decoration: const InputDecoration(
+                          labelText: 'Client',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.people),
+                          isDense: true,
+                        ),
+                        value: _selectedClient,
+                        items: _clients.map((client) {
+                          return DropdownMenuItem<Client>(
+                            value: client,
+                            child: Text(client.name),
+                          );
+                        }).toList(),
+                        onChanged: (Client? newValue) {
+                          setState(() {
+                            _selectedClient = newValue;
+                          });
+                        },
+                        validator: (value) => value == null ? 'Veuillez sélectionner un client.' : null,
+                        isExpanded: true,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // IMEI Field
+                      TextFormField(
+                        controller: _imeiController,
+                        decoration: const InputDecoration(
+                          labelText: 'Adresse IMEI de l\'appareil',
+                          hintText: 'Saisir l\'adresse IMEI',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.perm_device_info),
+                        ),
+                        validator: (value) => value == null || value.trim().isEmpty ? 'L\'IMEI est requis.' : null,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Garantie Field
+                      TextFormField(
+                        controller: _garantiController,
+                        decoration: const InputDecoration(
+                          labelText: 'Garantie',
+                          hintText: 'Ex: 6 mois, 1 an...',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.security),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Product Selection
+                      const Text(
+                        'Sélectionner un produit',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<Product>(
+                        value: _selectedProductDropdown,
+                        items: _allProducts.map((product) {
+                          return DropdownMenuItem<Product>(
+                            value: product,
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(minWidth: MediaQuery.of(context).size.width - 32),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      product.name,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Text(_currencyFormatter.format(product.prixVente)),
+                                  const SizedBox(width: 10),
+                                  Text('Stock: ${product.quantity}'),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (Product? selected) {
+                          if (selected != null) {
+                            _addProductToSale(selected);
+                          }
+                        },
+                        decoration: const InputDecoration(
+                          labelText: 'Produit',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.shopping_bag),
+                          isDense: true,
+                        ),
+                        hint: const Text('Sélectionner un produit...'),
+                        isExpanded: true,
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Selected Products Table
+                      if (_selectedProducts.isNotEmpty) ...[
+                        const Text(
+                          'Produits dans la vente',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 16),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            return SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                                child: DataTable(
+                                  columnSpacing: 12,
+                                  horizontalMargin: 8,
+                                  columns: const [
+                                    DataColumn(
+                                      label: SizedBox(
+                                        width: 150,
+                                        child: Text('Produit', style: TextStyle(fontWeight: FontWeight.bold))
+                                      ),
+                                    ),
+                                    DataColumn(
+                                      label: SizedBox(
+                                        width: 120,
+                                        child: Text('Prix Unitaire', style: TextStyle(fontWeight: FontWeight.bold))
+                                      ),
+                                    ),
+                                    DataColumn(
+                                      label: SizedBox(
+                                        width: 100,
+                                        child: Text('Stock Dispo', style: TextStyle(fontWeight: FontWeight.bold))
+                                      ),
+                                    ),
+                                    DataColumn(
+                                      label: SizedBox(
+                                        width: 80,
+                                        child: Text('Qté', style: TextStyle(fontWeight: FontWeight.bold))
+                                      ),
+                                    ),
+                                    DataColumn(
+                                      label: SizedBox(
+                                        width: 120,
+                                        child: Text('Sous-total', style: TextStyle(fontWeight: FontWeight.bold))
+                                      ),
+                                    ),
+                                    DataColumn(
+                                      label: SizedBox(
+                                        width: 80,
+                                        child: Text('Action', style: TextStyle(fontWeight: FontWeight.bold))
+                                      ),
+                                    ),
+                                  ],
+                                  rows: _selectedProducts.map((product) {
+                                    return DataRow(cells: [
+                                      DataCell(
+                                        SizedBox(
+                                          width: 150,
+                                          child: Text(product.name, overflow: TextOverflow.ellipsis),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        SizedBox(
+                                          width: 120,
+                                          child: TextFormField(
+                                            initialValue: product.priceOverride.toStringAsFixed(2),
+                                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                            decoration: const InputDecoration(
+                                              isDense: true,
+                                              contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                              border: OutlineInputBorder(),
+                                            ),
+                                            onChanged: (value) => _updateProductPrice(product.id, value),
+                                          ),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        SizedBox(
+                                          width: 100,
+                                          child: Text(product.quantity.toString()),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        SizedBox(
+                                          width: 80,
+                                          child: TextFormField(
+                                            initialValue: product.quantityToSell.toString(),
+                                            keyboardType: TextInputType.number,
+                                            decoration: const InputDecoration(
+                                              isDense: true,
+                                              contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                              border: OutlineInputBorder(),
+                                            ),
+                                            onChanged: (value) => _updateProductQuantity(product.id, value),
+                                          ),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        SizedBox(
+                                          width: 120,
+                                          child: Text(_currencyFormatter.format(product.subtotal)),
+                                        ),
+                                      ),
+                                      DataCell(
+                                        SizedBox(
+                                          width: 80,
+                                          child: IconButton(
+                                            icon: const Icon(Icons.delete, color: Colors.red),
+                                            onPressed: () => _removeProductFromSale(product.id),
+                                          ),
+                                        ),
+                                      ),
+                                    ]);
+                                  }).toList(),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            'Total de la vente: ${_currencyFormatter.format(_totalSaleAmount)}',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blueAccent),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+
+                      // Submit Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _isLoading ? null : _submitSale,
+                          icon: _isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                )
+                              : const Icon(Icons.check, color: Colors.white),
+                          label: Text(
+                            _isLoading ? 'Enregistrement...' : 'Enregistrer la Vente',
+                            style: const TextStyle(fontSize: 18, color: Colors.white),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blueAccent,
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+  );
+}
+}

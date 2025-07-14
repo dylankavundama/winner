@@ -38,6 +38,8 @@ dependencies:
   http :
   fl_chart :
   shared_preferences :
+  flutter_typeahead :
+  intl :
 
 dev_dependencies:
   flutter_test:
