@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:gestion_app_mobile/constants.dart';
 import 'package:gestion_app_mobile/main.dart';
+import 'package:gestion_app_mobile/product_page.dart';
 import 'package:gestion_app_mobile/vente_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -376,7 +377,10 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                       const SizedBox(height: 20),
                       _buildNavButton(context, 'Produits', Icons.inventory_2_outlined, () {
-                        print('Navigating to Produits');
+                       Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const ProductPage()),
+                        );
                       }),
                       _buildNavButton(context, 'Ventes', Icons.shopping_cart_outlined, () {
                         print('Navigating to Ventes');

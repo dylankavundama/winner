@@ -40,6 +40,8 @@ dependencies:
   shared_preferences :
   flutter_typeahead :
   intl :
+  printing: 
+  share_plus:  
 
 dev_dependencies:
   flutter_test:

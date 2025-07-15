@@ -36,7 +36,8 @@ class _ClientPageState extends State<ClientPage> {
         });
       } else {
         setState(() {
-          errorMessage = 'Erreur lors du chargement des clients (${response.statusCode})';
+          errorMessage =
+              'Erreur lors du chargement des clients (${response.statusCode})';
           isLoading = false;
         });
       }
@@ -66,7 +67,8 @@ class _ClientPageState extends State<ClientPage> {
               children: [
                 TextFormField(
                   decoration: const InputDecoration(labelText: 'Nom'),
-                  validator: (value) => value == null || value.isEmpty ? 'Champ requis' : null,
+                  validator: (value) =>
+                      value == null || value.isEmpty ? 'Champ requis' : null,
                   onSaved: (value) => name = value ?? '',
                 ),
                 TextFormField(
@@ -112,12 +114,15 @@ class _ClientPageState extends State<ClientPage> {
       );
       if (response.statusCode == 200) {
         fetchClients();
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Client ajouté avec succès')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Client ajouté avec succès')));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors de l\'ajout (${response.statusCode})')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Erreur lors de l\'ajout (${response.statusCode})')));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Erreur: $e')));
     }
   }
 
@@ -133,7 +138,8 @@ class _ClientPageState extends State<ClientPage> {
               ? Center(child: Text(errorMessage!))
               : ListView.separated(
                   itemCount: clients.length,
-                  separatorBuilder: (context, index) => const Divider(height: 1),
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final client = clients[index];
                     return ListTile(
@@ -151,4 +157,4 @@ class _ClientPageState extends State<ClientPage> {
       ),
     );
   }
-} 
+}

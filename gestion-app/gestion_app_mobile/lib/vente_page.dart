@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:gestion_app_mobile/facture_page.dart';
 
 class VentePage extends StatefulWidget {
   const VentePage({Key? key}) : super(key: key);
@@ -188,7 +189,32 @@ class _VentePageState extends State<VentePage> {
           
           if (responseData['success'] == true) {
             _showSuccess(responseData['message'] ?? 'Vente enregistrée avec succès');
-            Navigator.of(context).pop();
+            // Afficher la facture après enregistrement réussi
+            try {
+              final saleId = int.tryParse(responseData['sale_id'].toString()) ?? 0;
+              
+              // Vérifier que toutes les données nécessaires sont présentes
+              if (_selectedClient != null && _selectedProducts.isNotEmpty) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => FacturePage(
+                      saleId: saleId,
+                      client: _selectedClient!,
+                      products: _selectedProducts,
+                      total: _calculateTotal(),
+                      imei: _imeiController.text,
+                      garantie: _garantieController.text,
+                      saleDate: DateTime.now(),
+                    ),
+                  ),
+                );
+              } else {
+                Navigator.of(context).pop();
+              }
+            } catch (e) {
+              print('Erreur lors de la création de la facture: $e');
+              Navigator.of(context).pop();
+            }
           } else {
             _showError(responseData['message'] ?? 'Erreur lors de la vente');
           }
