@@ -6,9 +6,11 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
- 
+import 'package:intl/date_symbol_data_local.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('fr_FR', null);
   runApp(const MyApp());
 }
 
@@ -41,11 +43,13 @@ class MyApp extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8.0),
             ),
-            textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            textStyle:
+                const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
       ),
-      home: FutureBuilder<bool>( // Use FutureBuilder to check login status
+      home: FutureBuilder<bool>(
+        // Use FutureBuilder to check login status
         future: _checkLoginStatus(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -58,7 +62,8 @@ class MyApp extends StatelessWidget {
             // For simplicity, we'll refetch them on DashboardPage, or you can
             // pass them if you stored them persistently.
             return const DashboardPage(
-              loggedInUsername: "Bienvenue", // Placeholder, will be fetched or stored
+              loggedInUsername:
+                  "Bienvenue", // Placeholder, will be fetched or stored
               loggedInUserId: 0, // Placeholder
             );
           } else {
@@ -124,7 +129,8 @@ class _LoginPageState extends State<LoginPage> {
         });
       } else {
         setState(() {
-          _error = "Erreur lors du chargement des utilisateurs: ${response.statusCode}";
+          _error =
+              "Erreur lors du chargement des utilisateurs: ${response.statusCode}";
         });
       }
     } catch (e) {
@@ -145,7 +151,8 @@ class _LoginPageState extends State<LoginPage> {
 
     if (_selectedUsername == null || _passwordController.text.isEmpty) {
       setState(() {
-        _error = "Veuillez sélectionner un nom d'utilisateur et entrer un mot de passe.";
+        _error =
+            "Veuillez sélectionner un nom d'utilisateur et entrer un mot de passe.";
       });
       return;
     }
@@ -190,6 +197,9 @@ class _LoginPageState extends State<LoginPage> {
         if (phpSessionCookie != null && phpSessionCookie.isNotEmpty) {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('phpSessionCookie', phpSessionCookie);
+          if (data['role'] != null) {
+            await prefs.setString('user_role', data['role']);
+          }
           print('PHPSESSID saved: $phpSessionCookie');
         } else {
           print('PHPSESSID not found in headers or empty.');
@@ -202,18 +212,26 @@ class _LoginPageState extends State<LoginPage> {
 
         final User loggedInUser = User.fromJson(data);
 
+        Widget dashboard;
+        if (loggedInUser.role == 'vendeur') {
+          dashboard = const DashboardPageVendeur();
+        } else {
+          dashboard = DashboardPage(
+            loggedInUsername: loggedInUser.username,
+            loggedInUserId: loggedInUser.userId,
+          );
+        }
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => DashboardPage(
-              loggedInUsername: loggedInUser.username,
-              loggedInUserId: loggedInUser.userId,
-            ),
+            builder: (context) => dashboard,
           ),
         );
       } else {
         setState(() {
-          _error = data['message'] ?? 'Nom d\'utilisateur ou mot de passe incorrect.';
+          _error = data['message'] ??
+              'Nom d\'utilisateur ou mot de passe incorrect.';
         });
       }
     } catch (e) {
@@ -266,14 +284,18 @@ class _LoginPageState extends State<LoginPage> {
                       : DropdownButtonFormField<String>(
                           value: _selectedUsername,
                           items: _usernames
-                              .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                              .map((u) =>
+                                  DropdownMenuItem(value: u, child: Text(u)))
                               .toList(),
-                          onChanged: (val) => setState(() => _selectedUsername = val),
+                          onChanged: (val) =>
+                              setState(() => _selectedUsername = val),
                           decoration: const InputDecoration(
                             labelText: "Nom d'utilisateur",
                             prefixIcon: Icon(Icons.person),
                           ),
-                          validator: (val) => val == null ? 'Veuillez sélectionner un utilisateur' : null,
+                          validator: (val) => val == null
+                              ? 'Veuillez sélectionner un utilisateur'
+                              : null,
                           isExpanded: true,
                         ),
                   const SizedBox(height: 15),
@@ -284,7 +306,9 @@ class _LoginPageState extends State<LoginPage> {
                       prefixIcon: Icon(Icons.lock),
                     ),
                     obscureText: true,
-                    validator: (val) => val == null || val.isEmpty ? 'Veuillez entrer votre mot de passe' : null,
+                    validator: (val) => val == null || val.isEmpty
+                        ? 'Veuillez entrer votre mot de passe'
+                        : null,
                   ),
                   const SizedBox(height: 30),
                   _loading

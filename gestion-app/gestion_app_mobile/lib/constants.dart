@@ -14,7 +14,7 @@ class ApiConstants {
   static const String salesChartDataApi =
       '$baseUrl/api_sales_chart_data.php'; // Adjusted
 
-  // static const String clientsApi ='http://192.168.1.68/winner/gestion-app/gestion-app/api/clients.php';
+  // static const String clientsApi ='http://192.168.1.65/winner/gestion-app/gestion-app/api/clients.php';
 
   // Add these for the Vente page
   static const String clientsApi =

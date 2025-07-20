@@ -141,6 +141,48 @@ class _VentePageState extends State<VentePage> {
     }
   }
 
+  Future<int?> _addNewClient(String name) async {
+    try {
+      final response = await http.post(
+        Uri.parse(ApiConstants.clientsApi),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'name': name}),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true && data['client_id'] != null) {
+          return data['client_id'] as int;
+        }
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<void> _handleNextClientStep() async {
+    final newClientName = _clientNameController.text.trim();
+    if (newClientName.isNotEmpty) {
+      // Créer le client via l'API
+      final clientId = await _addNewClient(newClientName);
+      if (clientId != null) {
+        final newClient = Client(id: clientId, name: newClientName);
+        setState(() {
+          _clients.add(newClient);
+          _selectedClient = newClient;
+          _clientNameController.clear();
+        });
+        _nextPage();
+      } else {
+        _showError('Erreur lors de la création du client');
+      }
+    } else if (_selectedClient != null) {
+      _nextPage();
+    } else {
+      _showError('Veuillez sélectionner ou créer un client');
+    }
+  }
+
   Future<void> _submitSale() async {
     if (_selectedClient == null) {
       _showError('Veuillez sélectionner un client');
@@ -188,28 +230,52 @@ class _VentePageState extends State<VentePage> {
           final responseData = jsonDecode(response.body);
           
           if (responseData['success'] == true) {
-            _showSuccess(responseData['message'] ?? 'Vente enregistrée avec succès');
-            // Afficher la facture après enregistrement réussi
+            _showSuccess(responseData['message'] ?? '');
             try {
               final saleId = int.tryParse(responseData['sale_id'].toString()) ?? 0;
-              
-              // Vérifier que toutes les données nécessaires sont présentes
-              if (_selectedClient != null && _selectedProducts.isNotEmpty) {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => FacturePage(
-                      saleId: saleId,
-                      client: _selectedClient!,
-                      products: _selectedProducts,
-                      total: _calculateTotal(),
-                      imei: _imeiController.text,
-                      garantie: _garantieController.text,
-                      saleDate: DateTime.now(),
-                    ),
-                  ),
+              // Générer la facture automatiquement
+              final invoiceId = await _generateInvoice(saleId);
+              if (invoiceId != null) {
+                await showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: const Text('Vente enregistrée avec succès'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Client : ${_selectedClient?.name ?? ''}'),
+                          Text('Total : ${_calculateTotal().toStringAsFixed(2)}'),
+                          Text('Date : ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}'),
+                          if (_imeiController.text.isNotEmpty) Text('IMEI : ${_imeiController.text}'),
+                          if (_garantieController.text.isNotEmpty) Text('Garantie : ${_garantieController.text}'),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Fermer'),
+                        ),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.print),
+                          label: const Text('Imprimer la facture'),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => FacturePage(invoiceId: invoiceId),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  },
                 );
               } else {
-                Navigator.of(context).pop();
+                _showError('Erreur lors de la génération de la facture');
               }
             } catch (e) {
               print('Erreur lors de la création de la facture: $e');
@@ -475,7 +541,13 @@ class _VentePageState extends State<VentePage> {
             ),
           if (_currentPage < 3)
             ElevatedButton(
-              onPressed: _nextPage,
+              onPressed: () {
+                if (_currentPage == 0) {
+                  _handleNextClientStep();
+                } else {
+                  _nextPage();
+                }
+              },
               child: const Text('Suivant'),
             ),
           if (_currentPage == 3)
@@ -512,5 +584,25 @@ class _VentePageState extends State<VentePage> {
     setState(() {
       _selectedProducts.removeWhere((p) => p.id == productId);
     });
+  }
+
+  // Ajoute cette méthode pour générer la facture via l'API
+  Future<int?> _generateInvoice(int saleId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/add_invoice.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'sale_id': saleId}),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true && data['invoice_id'] != null) {
+          return data['invoice_id'] as int;
+        }
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
   }
 }

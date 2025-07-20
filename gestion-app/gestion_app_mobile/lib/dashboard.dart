@@ -1,8 +1,12 @@
 // lib/dashboard_page.dart (Existing file from previous response)
 import 'package:flutter/material.dart';
+import 'package:gestion_app_mobile/benefice_page.dart';
 import 'package:gestion_app_mobile/constants.dart';
+import 'package:gestion_app_mobile/invoice_list_page.dart';
 import 'package:gestion_app_mobile/main.dart';
 import 'package:gestion_app_mobile/product_page.dart';
+import 'package:gestion_app_mobile/report_page.dart';
+import 'package:gestion_app_mobile/sale_list_page.dart';
 import 'package:gestion_app_mobile/vente_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -10,6 +14,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gestion_app_mobile/client.dart';
  
+import 'sortie_page.dart';
+import 'package:gestion_app_mobile/detail_sale_page.dart';
 
 class DashboardPage extends StatefulWidget {
   final String loggedInUsername;
@@ -83,19 +89,23 @@ class _DashboardPageState extends State<DashboardPage> {
           totalProducts = data['total_products'] ?? 0;
           totalSales = data['total_sales'] ?? 0;
           totalInvoices = data['total_invoices'] ?? 0;
-          totalSalesAmount = (data['total_sales_amount'] as num?)?.toDouble() ?? 0.0;
-          totalChiffreAffaire = (data['total_chiffre_affaire'] as num?)?.toDouble() ?? 0.0;
+          totalSalesAmount =
+              (data['total_sales_amount'] as num?)?.toDouble() ?? 0.0;
+          totalChiffreAffaire =
+              (data['total_chiffre_affaire'] as num?)?.toDouble() ?? 0.0;
           isLoading = false;
         });
       } else if (response.statusCode == 401) {
         setState(() {
-          errorMessage = "Non autorisé. Session expirée ou invalide. Veuillez vous reconnecter.";
+          errorMessage =
+              "Non autorisé. Session expirée ou invalide. Veuillez vous reconnecter.";
           isLoading = false;
         });
         _navigateToLogin(); // Redirect on 401
       } else {
         setState(() {
-          errorMessage = "Échec du chargement des données du tableau de bord: ${response.statusCode}";
+          errorMessage =
+              "Échec du chargement des données du tableau de bord: ${response.statusCode}";
           isLoading = false;
         });
       }
@@ -123,11 +133,15 @@ class _DashboardPageState extends State<DashboardPage> {
         final data = json.decode(response.body);
         setState(() {
           chartMonths = List<String>.from(data['months'] ?? []);
-          chartTotals = (data['totals'] as List<dynamic>?)?.map((e) => (e as num).toDouble()).toList() ?? [];
+          chartTotals = (data['totals'] as List<dynamic>?)
+                  ?.map((e) => (e as num).toDouble())
+                  .toList() ??
+              [];
         });
       } else if (response.statusCode == 401) {
         // Handle 401 for chart data as well
-        print("Chart data: Non autorisé. Redirection vers la page de connexion.");
+        print(
+            "Chart data: Non autorisé. Redirection vers la page de connexion.");
         _navigateToLogin();
       } else {
         print("Failed to load chart data: ${response.statusCode}");
@@ -151,17 +165,15 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButton: FloatingActionButton(
-        onPressed: (){
-
-
-            Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const VentePage()),
-                        );
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const VentePage()),
+          );
         },
         child: const Icon(Icons.add),
         tooltip: 'Ajouter un client',
-      ) ,
+      ),
       appBar: AppBar(
         title: const Text(
           'Tableau de bord du POS',
@@ -182,6 +194,119 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         ],
       ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.blueGrey[700],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Image.asset('assets/logo.png', height: 80),
+                  // SizedBox(height: 10),
+                  const Text(
+                    'Winner Company',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'Navigation rapide',
+                    style: TextStyle(
+                      color: Colors.blueGrey[200],
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ListTile(
+              leading: Icon(Icons.people_alt_outlined),
+              title: Text('Clients'),
+              onTap: () {
+              Navigator.push(
+                context,
+                    MaterialPageRoute(
+                        builder: (context) => const ClientPage()));
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.inventory_2_outlined),
+              title: Text('Produits'),
+              onTap: () {
+              Navigator.push(
+                context,
+                    MaterialPageRoute(
+                        builder: (context) => const ProductPage()));
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.shopping_cart_outlined),
+              title: Text('Ventes'),
+              onTap: () {
+              Navigator.push(
+                context,
+                  MaterialPageRoute(builder: (context) => const SaleListPage()),
+              );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.receipt_long_outlined),
+              title: Text('Factures'),
+              onTap: () {
+              Navigator.push(
+                context,
+                  MaterialPageRoute(
+                      builder: (context) => const InvoiceListPage()),
+              );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.bar_chart_outlined),
+              title: Text('Rapports'),
+              onTap: () {
+              Navigator.push(
+                context,
+                  MaterialPageRoute(builder: (context) => const ReportPage()),
+              );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.attach_money),
+              title: Text('Bénéfice'),
+              onTap: () {
+              Navigator.push(
+                context,
+                  MaterialPageRoute(builder: (context) => const BeneficePage()),
+              );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.arrow_downward),
+              title: Text('Sorties'),
+              onTap: () {
+              Navigator.push(
+                context,
+                  MaterialPageRoute(builder: (context) => const SortiePage()),
+              );
+              },
+            ),
+            Divider(),
+            ListTile(
+              leading: Icon(Icons.logout, color: Colors.redAccent),
+              title: Text('Déconnexion',
+                  style: TextStyle(color: Colors.redAccent)),
+              onTap: _navigateToLogin,
+            ),
+          ],
+        ),
+      ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : errorMessage != null
@@ -197,12 +322,11 @@ class _DashboardPageState extends State<DashboardPage> {
                 )
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                       _buildUserInfoCard(widget.loggedInUsername),
                       const SizedBox(height: 30),
-
                       const Text(
                         'Statistiques clés',
                         style: TextStyle(
@@ -223,44 +347,36 @@ class _DashboardPageState extends State<DashboardPage> {
                             mainAxisSpacing: 20,
                             crossAxisSpacing: 20,
                             childAspectRatio: 1.3,
-              children: [
-                              _buildStatCard(
-                                  'Clients',
-                                  totalClients.toString(),
-                                  Icons.people_alt_outlined,
-                                  Colors.blueAccent),
+                            children: [
+                              _buildStatCard('Clients', totalClients.toString(),
+                                  Icons.people_alt_outlined, Colors.blueAccent),
                               _buildStatCard(
                                   'Produits',
                                   totalProducts.toString(),
                                   Icons.inventory_2_outlined,
                                   Colors.green),
-                              _buildStatCard(
-                                  'Ventes',
-                                  totalSales.toString(),
-                                  Icons.shopping_cart_outlined,
-                                  Colors.teal),
+                              _buildStatCard('Ventes', totalSales.toString(),
+                                  Icons.shopping_cart_outlined, Colors.teal),
                               _buildStatCard(
                                   'Factures',
                                   totalInvoices.toString(),
                                   Icons.receipt_long_outlined,
                                   Colors.orange),
-                _buildStatCard(
+                              _buildStatCard(
                                   'Total des ventes',
-                    '${totalSalesAmount.toStringAsFixed(2)} €',
+                                  '${totalSalesAmount.toStringAsFixed(2)} €',
                                   Icons.payments_outlined,
-                    Colors.purple),
-                _buildStatCard(
+                                  Colors.purple),
+                              _buildStatCard(
                                   'Chiffre d\'affaires',
-                    '${totalChiffreAffaire.toStringAsFixed(2)} €',
+                                  '${totalChiffreAffaire.toStringAsFixed(2)} €',
                                   Icons.area_chart_outlined,
-                    Colors.red),
+                                  Colors.red),
                             ],
                           );
                         },
                       ),
-
                       const SizedBox(height: 40),
-
                       const Text(
                         'Aperçu des performances',
                         style: TextStyle(
@@ -291,7 +407,9 @@ class _DashboardPageState extends State<DashboardPage> {
                                   barGroups: _getBarGroups(),
                                   borderData: FlBorderData(
                                     show: true,
-                                    border: Border.all(color: Colors.grey.withOpacity(0.3), width: 1),
+                                    border: Border.all(
+                                        color: Colors.grey.withOpacity(0.3),
+                                        width: 1),
                                   ),
                                   titlesData: FlTitlesData(
                                     show: true,
@@ -331,13 +449,18 @@ class _DashboardPageState extends State<DashboardPage> {
                                         reservedSize: 30,
                                       ),
                                     ),
-                                    rightTitles:   AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                    topTitles:   AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                    rightTitles: AxisTitles(
+                                        sideTitles:
+                                            SideTitles(showTitles: false)),
+                                    topTitles: AxisTitles(
+                                        sideTitles:
+                                            SideTitles(showTitles: false)),
                                   ),
                                   gridData: FlGridData(
                                     show: true,
                                     drawVerticalLine: false,
-                                    horizontalInterval: _getLeftTitlesInterval(),
+                                    horizontalInterval:
+                                        _getLeftTitlesInterval(),
                                     drawHorizontalLine: true,
                                     getDrawingHorizontalLine: (value) => FlLine(
                                       color: Colors.grey.withOpacity(0.2),
@@ -347,13 +470,17 @@ class _DashboardPageState extends State<DashboardPage> {
                                   barTouchData: BarTouchData(
                                     touchTooltipData: BarTouchTooltipData(
                                       tooltipBgColor: Colors.blueGrey,
-                                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                                      getTooltipItem:
+                                          (group, groupIndex, rod, rodIndex) {
                                         return BarTooltipItem(
                                           '${chartMonths[group.x.toInt()]}\n',
-                                          const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                          const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold),
                                           children: <TextSpan>[
                                             TextSpan(
-                                              text: '${rod.toY.toStringAsFixed(2)} €',
+                                              text:
+                                                  '${rod.toY.toStringAsFixed(2)} €',
                                               style: const TextStyle(
                                                 color: Colors.white,
                                                 fontSize: 14,
@@ -371,41 +498,11 @@ class _DashboardPageState extends State<DashboardPage> {
                                 child: Text(
                                   'Aucune donnée de vente disponible pour le graphique.',
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                                  style: TextStyle(
+                                      fontSize: 16, color: Colors.grey),
                                 ),
                               ),
                       ),
-                      const SizedBox(height: 20),
-                      _buildNavButton(context, 'Produits', Icons.inventory_2_outlined, () {
-                       Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const ProductPage()),
-                        );
-                      }),
-                      _buildNavButton(context, 'Ventes', Icons.shopping_cart_outlined, () {
-                        print('Navigating to Ventes');
-                      }),
-                      _buildNavButton(context, 'Factures', Icons.receipt_long_outlined, () {
-                        print('Navigating to Factures');
-                      }),
-                      _buildNavButton(context, 'Clients', Icons.people_alt_outlined, () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const ClientPage()),
-                        );
-                      }),
-                      _buildNavButton(context, 'Rapports', Icons.bar_chart_outlined, () {
-                        print('Navigating to Rapports');
-                      }),
-                      _buildNavButton(context, 'Stock', Icons.archive_outlined, () {
-                        print('Navigating to Stock');
-                      }),
-                      _buildNavButton(context, 'Bénéfice', Icons.attach_money, () {
-                        print('Navigating to Bénéfice');
-                      }),
-                      _buildNavButton(context, 'Sorties', Icons.arrow_downward, () {
-                        print('Navigating to Sorties');
-                      }),
                     ],
                   ),
                 ),
@@ -413,7 +510,8 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   // Helper methods remain the same
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+      String label, String value, IconData icon, Color color) {
     return Card(
       elevation: 5,
       shape: RoundedRectangleBorder(
@@ -432,7 +530,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 Icon(icon, size: 35, color: color),
               ],
             ),
-           // const SizedBox(height: 10),
+            // const SizedBox(height: 10),
             Text(
               value,
               style: TextStyle(
@@ -454,7 +552,8 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildNavButton(BuildContext context, String title, IconData icon, VoidCallback onTap) {
+  Widget _buildNavButton(
+      BuildContext context, String title, IconData icon, VoidCallback onTap) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Card(
@@ -478,7 +577,8 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                 ),
                 const Spacer(),
-                const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+                const Icon(Icons.arrow_forward_ios,
+                    size: 18, color: Colors.grey),
               ],
             ),
           ),
@@ -496,16 +596,21 @@ class _DashboardPageState extends State<DashboardPage> {
         padding: const EdgeInsets.all(20.0),
         child: Row(
           children: [
-            Icon(Icons.person_pin_circle, size: 60, color: Colors.blueGrey[100]),
+            CircleAvatar(
+              radius: 30,
+              backgroundColor: Colors.white,
+              child: Icon(Icons.account_circle,
+                  size: 50, color: Colors.blueGrey[700]),
+            ),
             const SizedBox(width: 20),
             Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
                   username,
                   style: const TextStyle(
                     fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                 ),
@@ -547,5 +652,201 @@ class _DashboardPageState extends State<DashboardPage> {
     if (maxTotal <= 5000) return 1000.0;
     if (maxTotal <= 10000) return 2000.0;
     return 5000.0;
+  }
+}
+
+class DashboardPageVendeur extends StatefulWidget {
+  const DashboardPageVendeur({Key? key}) : super(key: key);
+
+  @override
+  State<DashboardPageVendeur> createState() => _DashboardPageVendeurState();
+}
+
+class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
+  bool isLoading = true;
+  String? errorMessage;
+  List<dynamic> ventes = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchVentes();
+  }
+
+  Future<void> _fetchVentes() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+    try {
+      final response =
+          await http.get(Uri.parse(ApiConstants.baseUrl + '/sales.php'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          setState(() {
+            ventes = data['sales'] ?? [];
+            isLoading = false;
+          });
+        } else {
+          setState(() {
+            errorMessage =
+                data['message'] ?? 'Erreur lors du chargement des ventes';
+            isLoading = false;
+          });
+        }
+      } else {
+        setState(() {
+          errorMessage = 'Erreur serveur (${response.statusCode})';
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Erreur de connexion: $e';
+        isLoading = false;
+      });
+    }
+  }
+
+  void _goToNouvelleVente() {
+    Navigator.pushNamed(context, '/vente');
+  }
+
+  void _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('phpSessionCookie');
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+      (route) => false,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Tableau de bord Vendeur'),
+        backgroundColor: Colors.blueGrey[800],
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(color: Colors.blueGrey),
+              child: Text('Menu',
+                  style: TextStyle(color: Colors.white, fontSize: 24)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.dashboard),
+              title: const Text('Dashboard'),
+              onTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const DashboardPageVendeur()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.shopping_cart),
+              title: const Text('Ventes'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const DashboardPageVendeur()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.receipt),
+              title: const Text('Factures'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const InvoiceListPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.people),
+              title: const Text('Clients'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ClientPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.inventory),
+              title: const Text('Produits'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProductPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.money_off),
+              title: const Text('Sorties'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SortiePage()),
+                );
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.redAccent),
+              title: const Text('Déconnexion',
+                  style: TextStyle(color: Colors.redAccent)),
+              onTap: _logout,
+            ),
+          ],
+        ),
+      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : errorMessage != null
+              ? Center(child: Text(errorMessage!))
+              : RefreshIndicator(
+                  onRefresh: _fetchVentes,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: ventes.length,
+                    itemBuilder: (context, index) {
+                      final vente = ventes[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        child: ListTile(
+                          leading: const Icon(Icons.shopping_bag),
+                          title: Text(
+                              'Vente #${vente['id']} - ${vente['client_name'] ?? ''}'),
+                          subtitle: Text(
+                              'Montant: ${vente['total']}\nDate: ${vente['date_vente']}'),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DetailSalePage(saleId: vente['id']),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _goToNouvelleVente,
+        child: const Icon(Icons.add),
+        tooltip: 'Nouvelle vente',
+      ),
+    );
   }
 }

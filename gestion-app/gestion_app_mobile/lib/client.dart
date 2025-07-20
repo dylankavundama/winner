@@ -29,9 +29,25 @@ class _ClientPageState extends State<ClientPage> {
     try {
       final response = await http.get(Uri.parse(ApiConstants.clientsApi));
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final decoded = json.decode(response.body);
+        List<Map<String, dynamic>> loadedClients = [];
+        if (decoded is List) {
+          // Cas où l'API retourne directement une liste
+          loadedClients = decoded.cast<Map<String, dynamic>>();
+        } else if (decoded is Map && decoded['clients'] is List) {
+          // Cas où l'API retourne un objet avec une clé 'clients'
+          loadedClients = (decoded['clients'] as List)
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList();
+        } else {
+          setState(() {
+            errorMessage = 'Format de réponse inattendu.';
+            isLoading = false;
+          });
+          return;
+        }
         setState(() {
-          clients = data.cast<Map<String, dynamic>>();
+          clients = loadedClients;
           isLoading = false;
         });
       } else {
@@ -49,82 +65,7 @@ class _ClientPageState extends State<ClientPage> {
     }
   }
 
-  void _showAddClientDialog() {
-    final _formKey = GlobalKey<FormState>();
-    String name = '';
-    String email = '';
-    String phone = '';
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Ajouter un client'),
-          content: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  decoration: const InputDecoration(labelText: 'Nom'),
-                  validator: (value) =>
-                      value == null || value.isEmpty ? 'Champ requis' : null,
-                  onSaved: (value) => name = value ?? '',
-                ),
-                TextFormField(
-                  decoration: const InputDecoration(labelText: 'Email'),
-                  keyboardType: TextInputType.emailAddress,
-                  onSaved: (value) => email = value ?? '',
-                ),
-                TextFormField(
-                  decoration: const InputDecoration(labelText: 'Téléphone'),
-                  keyboardType: TextInputType.phone,
-                  onSaved: (value) => phone = value ?? '',
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Annuler'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (_formKey.currentState!.validate()) {
-                  _formKey.currentState!.save();
-                  await _addClient(name, email, phone);
-                  Navigator.of(context).pop();
-                }
-              },
-              child: const Text('Ajouter'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _addClient(String name, String email, String phone) async {
-    try {
-      final response = await http.post(
-        Uri.parse(ApiConstants.clientsApi),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'name': name, 'email': email, 'phone': phone}),
-      );
-      if (response.statusCode == 200) {
-        fetchClients();
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Client ajouté avec succès')));
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Erreur lors de l\'ajout (${response.statusCode})')));
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Erreur: $e')));
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -150,11 +91,7 @@ class _ClientPageState extends State<ClientPage> {
                     );
                   },
                 ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddClientDialog,
-        child: const Icon(Icons.add),
-        tooltip: 'Ajouter un client',
-      ),
+ 
     );
   }
 }
