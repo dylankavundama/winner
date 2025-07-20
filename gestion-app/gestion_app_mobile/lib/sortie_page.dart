@@ -46,7 +46,7 @@ class _SortiePageState extends State<SortiePage> {
       if (date.isNotEmpty) params['date'] = date;
       if (month.isNotEmpty) params['month'] = month;
       if (year.isNotEmpty) params['year'] = year;
-      final uri = Uri.parse(ApiConstants.baseUrl + '/sorties.php').replace(queryParameters: params);
+      final uri = Uri.parse('${ApiConstants.baseUrl}/sorties.php').replace(queryParameters: params);
       final response = await http.get(uri);
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
