@@ -453,7 +453,7 @@ class _ProductPageState extends State<ProductPage> {
                       ),
                     ),
                     Text(
-                      '${product.price.toStringAsFixed(2)} €',
+                      '${product.price.toStringAsFixed(2)} \$',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -473,7 +473,7 @@ class _ProductPageState extends State<ProductPage> {
                       ),
                     ),
                     Text(
-                      '${product.prixVente.toStringAsFixed(2)} €',
+                      '${product.prixVente.toStringAsFixed(2)} \$',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

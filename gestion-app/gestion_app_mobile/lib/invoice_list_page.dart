@@ -111,6 +111,34 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
     });
   }
 
+  Future<void> _toggleInvoiceStatus(Invoice invoice) async {
+    final newStatus = invoice.status.toLowerCase() == 'payée' ? 'non payée' : 'payée';
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/update_invoice_status.php'),
+        body: {
+          'id': invoice.id.toString(),
+          'status': newStatus,
+        },
+      );
+      final data = json.decode(response.body);
+      if (data['success'] == true) {
+        await _fetchInvoices();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Statut mis à jour avec succès.')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data['message'] ?? 'Erreur lors de la mise à jour du statut.')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur de connexion: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -150,13 +178,36 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                             ),
                             title: Text('Client : ${invoice.clientName}'),
                             subtitle: Text('Date : ${invoice.saleDate}'),
-                            trailing: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text('${invoice.total.toStringAsFixed(2)} €', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                Text(invoice.status, style: TextStyle(color: invoice.status.toLowerCase() == 'payée' ? Colors.green : Colors.orange)),
-                              ],
+                            trailing: SizedBox(
+                              width: 170, // Ajuste la largeur si besoin
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '${invoice.total.toStringAsFixed(2)} \$',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                //  const SizedBox(width: 8),
+                                  // Text(
+                                  //   invoice.status,
+                                  //   style: TextStyle(
+                                  //     color: invoice.status.toLowerCase() == 'payée' ? Colors.green : Colors.orange,
+                                  //     fontSize: 13,
+                                  //   ),
+                                  // ),
+                                  IconButton(
+                                    icon: Icon(
+                                      invoice.status.toLowerCase() == 'payée' ? Icons.check_circle : Icons.cancel,
+                                      color: invoice.status.toLowerCase() == 'payée' ? Colors.green : Colors.red,
+                                      size: 22,
+                                    ),
+                                    tooltip: invoice.status.toLowerCase() == 'payée' ? 'Marquer non payée' : 'Marquer payée',
+                                    onPressed: () => _toggleInvoiceStatus(invoice),
+                                  ),
+                                ],
+                              ),
                             ),
                             onTap: () {
                               Navigator.push(

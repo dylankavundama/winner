@@ -116,9 +116,9 @@ class _FacturePageState extends State<FacturePage> {
               children: [
                 // Logo centré
                 Center(
-                  child: Image.asset('assets/logo.png', height: 60),
+                  child: Image.asset('assets/logo.png', height: 80),
                 ),
-                const SizedBox(height: 10),
+              //  const SizedBox(height: 10),
                 // Titre société et numéro facture
                 Center(
                   child: Column(
@@ -401,7 +401,7 @@ class _FacturePageState extends State<FacturePage> {
                         ),
                         pw.Padding(
                           padding: const pw.EdgeInsets.all(4),
-                          child: pw.Text('${prod['price']} €'),
+                          child: pw.Text('${prod['price']} \$'),
                         ),
                       ],
                     )),
@@ -417,7 +417,7 @@ class _FacturePageState extends State<FacturePage> {
                     pw.SizedBox(),
                     pw.Padding(
                       padding: const pw.EdgeInsets.all(4),
-                      child: pw.Text('$total €'),
+                      child: pw.Text('$total \$'),
                     ),
                   ],
                 ),
@@ -437,7 +437,7 @@ class _FacturePageState extends State<FacturePage> {
     final client = invoice!['client'] as Map<String, dynamic>;
     final total = invoice!['total'];
     final date = invoice!['sale_date'];
-    final factureText = 'Facture #${invoice!['id']}\nDate : $date\nClient : ${client['name']}\nTotal : $total €';
+    final factureText = 'Facture #${invoice!['id']}\nDate : $date\nClient : ${client['name']}\nTotal : $total \$';
     await Share.share(factureText, subject: 'Facture WINNER');
   }
 } 

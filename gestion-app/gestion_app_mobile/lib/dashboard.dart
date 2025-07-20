@@ -364,12 +364,12 @@ class _DashboardPageState extends State<DashboardPage> {
                                   Colors.orange),
                               _buildStatCard(
                                   'Total des ventes',
-                                  '${totalSalesAmount.toStringAsFixed(2)} €',
+                                  '${totalSalesAmount.toStringAsFixed(2)} \$',
                                   Icons.payments_outlined,
                                   Colors.purple),
                               _buildStatCard(
                                   'Chiffre d\'affaires',
-                                  '${totalChiffreAffaire.toStringAsFixed(2)} €',
+                                  '${totalChiffreAffaire.toStringAsFixed(2)} \$',
                                   Icons.area_chart_outlined,
                                   Colors.red),
                             ],
@@ -439,7 +439,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                         interval: _getLeftTitlesInterval(),
                                         getTitlesWidget: (value, meta) {
                                           return Text(
-                                            '${value.toInt()}€',
+                                            '${value.toInt()}\$',
                                             style: const TextStyle(
                                               color: Colors.black,
                                               fontSize: 10,
@@ -480,7 +480,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                           children: <TextSpan>[
                                             TextSpan(
                                               text:
-                                                  '${rod.toY.toStringAsFixed(2)} €',
+                                                  '${rod.toY.toStringAsFixed(2)} \$',
                                               style: const TextStyle(
                                                 color: Colors.white,
                                                 fontSize: 14,
