@@ -236,6 +236,7 @@ class _VentePageState extends State<VentePage> {
               // Générer la facture automatiquement
               final invoiceId = await _generateInvoice(saleId);
               if (invoiceId != null) {
+                // ignore: use_build_context_synchronously
                 await showDialog(
                   context: context,
                   barrierDismissible: false,
