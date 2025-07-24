@@ -1,0 +1,2 @@
+C:/xampp/htdocs/winner/gestion-app/gestion-app/gestion_app_mobile/gestion_app_mobile/android/app/.cxx/Debug/572t2ytc/x86_64/CMakeFiles/edit_cache.dir
+C:/xampp/htdocs/winner/gestion-app/gestion-app/gestion_app_mobile/gestion_app_mobile/android/app/.cxx/Debug/572t2ytc/x86_64/CMakeFiles/rebuild_cache.dir
