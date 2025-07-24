@@ -82,14 +82,14 @@ class _ReportPageState extends State<ReportPage>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Rapports'),
-        backgroundColor: Colors.blueGrey[800],
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
             Tab(
-                text: 'Ventes',
-                style: TextStyle(
-                    fontWeight: FontWeight.bold, color: Colors.white)),
+              text: 'Ventes',
+            ),
             Tab(text: 'Stock faible'),
             Tab(text: 'Top clients'),
             Tab(text: 'Impayées'),
