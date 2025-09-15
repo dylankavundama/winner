@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:gestion_app_mobile/constants.dart';
+import 'package:gestion_app_mobile/get_out.dart';
 import 'package:gestion_app_mobile/invoice_list_page.dart';
 import 'package:gestion_app_mobile/main.dart';
 import 'package:gestion_app_mobile/product_page.dart';
+import 'package:gestion_app_mobile/stock.dart';
+import 'package:gestion_app_mobile/vente_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,7 +15,9 @@ import 'package:gestion_app_mobile/detail_sale_page.dart';
 import 'package:intl/intl.dart';
 
 class DashboardPageVendeur extends StatefulWidget {
-  const DashboardPageVendeur({Key? key}) : super(key: key);
+  final String loggedInUsername;
+
+  const DashboardPageVendeur({Key? key, required this.loggedInUsername}) : super(key: key);
 
   @override
   State<DashboardPageVendeur> createState() => _DashboardPageVendeurState();
@@ -36,8 +41,7 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
       errorMessage = null;
     });
     try {
-      final response =
-          await http.get(Uri.parse(ApiConstants.baseUrl + '/sales.php'));
+      final response = await http.get(Uri.parse(ApiConstants.baseUrl + '/sales.php'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
@@ -47,8 +51,7 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
           });
         } else {
           setState(() {
-            errorMessage =
-                data['message'] ?? 'Erreur lors du chargement des ventes';
+            errorMessage = data['message'] ?? 'Erreur lors du chargement des ventes';
             isLoading = false;
           });
         }
@@ -66,13 +69,11 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
     }
   }
 
-  void _goToNouvelleVente() {
-    Navigator.pushNamed(context, '/vente');
-  }
-
   void _logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('phpSessionCookie');
+    await prefs.remove('loggedInUsername');
+    await prefs.remove('user_role');
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
@@ -89,7 +90,7 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
       if (da == null && db == null) return 0;
       if (da == null) return 1;
       if (db == null) return -1;
-      return db.compareTo(da); // décroissant
+      return db.compareTo(da);
     });
     return sorted;
   }
@@ -143,10 +144,15 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blueGrey),
-              child: Text('Menu',
-                  style: TextStyle(color: Colors.white, fontSize: 24)),
+            UserAccountsDrawerHeader(
+              decoration: const BoxDecoration(color: Colors.blueGrey),
+              accountName: Text(widget.loggedInUsername,
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              accountEmail: null,
+              currentAccountPicture: const CircleAvatar(
+                backgroundColor: Colors.white,
+                child: Icon(Icons.person, color: Colors.blueGrey, size: 40),
+              ),
             ),
             ListTile(
               leading: const Icon(Icons.dashboard),
@@ -155,7 +161,8 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const DashboardPageVendeur()),
+                    builder: (context) => DashboardPageVendeur(loggedInUsername: widget.loggedInUsername),
+                  ),
                 );
               },
             ),
@@ -166,7 +173,8 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const DashboardPageVendeur()),
+                    builder: (context) => DashboardPageVendeur(loggedInUsername: widget.loggedInUsername),
+                  ),
                 );
               },
             ),
@@ -176,7 +184,9 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const InvoiceListPage()),
+                  MaterialPageRoute(
+                    builder: (context) => const InvoiceListPage(),
+                  ),
                 );
               },
             ),
@@ -200,13 +210,35 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
                 );
               },
             ),
-            ListTile(
+            // ListTile(
+            //   leading: const Icon(Icons.money_off),
+            //   title: const Text('Sorties'),
+            //   onTap: () {
+            //     Navigator.push(
+            //       context,
+            //       MaterialPageRoute(builder: (context) => const SortiePage()),
+            //     );
+            //   },
+            // ),
+
+                      ListTile(
               leading: const Icon(Icons.money_off),
               title: const Text('Sorties'),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const SortiePage()),
+                  MaterialPageRoute(builder: (context) => SortiePage(loggedInUsername: widget.loggedInUsername)),
+                );
+              },
+            ),
+                        Divider(),
+            ListTile(
+              leading: const Icon(Icons.approval),
+              title: const Text('Stock'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => StockOutHistoryPage()),
                 );
               },
             ),
@@ -251,7 +283,10 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
                   ),
                 ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _goToNouvelleVente,
+        onPressed: () {
+          Navigator.push(
+              context, MaterialPageRoute(builder: (context) => VentePage()));
+        },
         child: const Icon(Icons.add),
         tooltip: 'Nouvelle vente',
       ),

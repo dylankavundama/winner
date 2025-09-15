@@ -40,7 +40,8 @@ class _BeneficePageState extends State<BeneficePage> {
       if (date.isNotEmpty) params['date'] = date;
       if (month.isNotEmpty) params['month'] = month;
       if (year.isNotEmpty) params['year'] = year;
-      final uri = Uri.parse('${ApiConstants.baseUrl}/benefice.php').replace(queryParameters: params);
+      final uri = Uri.parse('${ApiConstants.baseUrl}/benefice.php')
+          .replace(queryParameters: params);
       final response = await http.get(uri);
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -53,7 +54,8 @@ class _BeneficePageState extends State<BeneficePage> {
           });
         } else {
           setState(() {
-            errorMessage = data['message'] ?? 'Erreur lors du chargement du bénéfice';
+            errorMessage =
+                data['message'] ?? 'Erreur lors du chargement du bénéfice';
             isLoading = false;
           });
         }
@@ -92,13 +94,18 @@ class _BeneficePageState extends State<BeneficePage> {
         padding: const EdgeInsets.all(24),
         child: Card(
           elevation: 4,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
             padding: const EdgeInsets.all(32.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Calcul du bénéfice', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blue)),
+                const Text('Calcul du bénéfice',
+                    style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue)),
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -111,7 +118,9 @@ class _BeneficePageState extends State<BeneficePage> {
                         onTap: () async {
                           final picked = await showDatePicker(
                             context: context,
-                            initialDate: date.isNotEmpty ? DateTime.parse(date) : DateTime.now(),
+                            initialDate: date.isNotEmpty
+                                ? DateTime.parse(date)
+                                : DateTime.now(),
                             firstDate: DateTime(2020),
                             lastDate: DateTime.now(),
                           );
@@ -135,7 +144,9 @@ class _BeneficePageState extends State<BeneficePage> {
                         onTap: () async {
                           final picked = await showDatePicker(
                             context: context,
-                            initialDate: month.isNotEmpty ? DateTime.parse(month + '-01') : DateTime.now(),
+                            initialDate: month.isNotEmpty
+                                ? DateTime.parse(month + '-01')
+                                : DateTime.now(),
                             firstDate: DateTime(2020),
                             lastDate: DateTime.now(),
                           );
@@ -159,7 +170,9 @@ class _BeneficePageState extends State<BeneficePage> {
                         onTap: () async {
                           final picked = await showDatePicker(
                             context: context,
-                            initialDate: year.isNotEmpty ? DateTime(int.parse(year)) : DateTime.now(),
+                            initialDate: year.isNotEmpty
+                                ? DateTime(int.parse(year))
+                                : DateTime.now(),
                             firstDate: DateTime(2020),
                             lastDate: DateTime.now(),
                           );
@@ -178,13 +191,25 @@ class _BeneficePageState extends State<BeneficePage> {
                 ),
                 const SizedBox(height: 24),
                 const Text('Bénéfice brut pour la période sélectionnée :'),
-                Text('${beneficeBrut.toStringAsFixed(2)} \$', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blue)),
+                Text('${beneficeBrut.toStringAsFixed(2)} \$',
+                    style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue)),
                 const SizedBox(height: 16),
                 const Text('Dépenses déclarées :'),
-                Text('${depenses.toStringAsFixed(2)} \$', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.red)),
+                Text('${depenses.toStringAsFixed(2)} \$',
+                    style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red)),
                 const SizedBox(height: 16),
                 const Text('Bénéfice exact :'),
-                Text('${beneficeExact.toStringAsFixed(2)} \$', style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.green)),
+                Text('${beneficeExact.toStringAsFixed(2)} \$',
+                    style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green)),
               ],
             ),
           ),
@@ -192,4 +217,4 @@ class _BeneficePageState extends State<BeneficePage> {
       ),
     );
   }
-} 
+}

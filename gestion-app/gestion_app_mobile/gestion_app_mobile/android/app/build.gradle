@@ -32,7 +32,8 @@ if (keystorePropertiesFile.exists()) {
 }
 android {
     namespace "com.winnercompany.app"
-    compileSdk 35
+    // compileSdk 35
+       compileSdk = flutter.compileSdkVersion
 
     compileOptions {
         coreLibraryDesugaringEnabled true
@@ -51,7 +52,8 @@ android {
     defaultConfig {
         applicationId "com.winnercompany.app"
         minSdkVersion 25
-        targetSdkVersion 35
+        // targetSdkVersion 35
+                targetSdk = flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }

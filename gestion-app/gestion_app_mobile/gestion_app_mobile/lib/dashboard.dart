@@ -2,11 +2,13 @@
 import 'package:flutter/material.dart';
 import 'package:gestion_app_mobile/benefice_page.dart';
 import 'package:gestion_app_mobile/constants.dart';
+import 'package:gestion_app_mobile/get_out.dart';
 import 'package:gestion_app_mobile/invoice_list_page.dart';
 import 'package:gestion_app_mobile/main.dart';
 import 'package:gestion_app_mobile/product_page.dart';
 import 'package:gestion_app_mobile/report_page.dart';
 import 'package:gestion_app_mobile/sale_list_page.dart';
+import 'package:gestion_app_mobile/stock.dart';
 import 'package:gestion_app_mobile/vente_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -316,12 +318,25 @@ class _DashboardPageState extends State<DashboardPage> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.arrow_downward),
-              title: Text('Sorties'),
+              leading: const Icon(Icons.money_off),
+              title: const Text('Sorties'),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const SortiePage()),
+                  MaterialPageRoute(
+                      builder: (context) => SortiePage(
+                          loggedInUsername: widget.loggedInUsername)),
+                );
+              },
+            ),
+            Divider(),
+            ListTile(
+              leading: const Icon(Icons.approval),
+              title: const Text('Stock'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => StockOutHistoryPage()),
                 );
               },
             ),
@@ -523,6 +538,8 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                 ),
     );
+
+
   }
 
   // Helper methods remain the same

@@ -2,7 +2,7 @@ name: gestion_app_mobile
 description: A new Flutter project.
 publish_to: "none"
 
-version: 1.1.0+10
+version: 1.1.0+14
 
 environment:
   sdk: ">=3.5.0 <4.2.0"
@@ -18,8 +18,10 @@ dependencies:
   shared_preferences :
   flutter_typeahead :
   intl :
-  printing: 
-  share_plus:  
+  printing: ^5.6.0
+  # share_plus: ^6.0.0
+  sunmi_printer_plus: ^2.1.2  # Use the latest version
+
   
 
 dev_dependencies:

@@ -85,6 +85,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </div>
             <button type="submit" class="btn btn-primary w-100">Se connecter</button>
+<br>
+<br>
+  <center>
+
+   <a href="https://winnercompany.net/change_password.php">Modifier le mot de passe</a>
+  </center>
         </form>
     </div>
 </div>

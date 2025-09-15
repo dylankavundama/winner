@@ -4,10 +4,8 @@ import 'package:gestion_app_mobile/dashboard.dart';
 import 'package:gestion_app_mobile/user_model.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/date_symbol_data_local.dart';
-
 import 'Dash_vendeur.dart';
 
 void main() async {
@@ -50,39 +48,46 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: FutureBuilder<bool>(
-        // Use FutureBuilder to check login status
+      home: FutureBuilder<Map<String, String?>>(
         future: _checkLoginStatus(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             );
-          } else if (snapshot.hasData && snapshot.data == true) {
-            // User is logged in, navigate to DashboardPage
-            // IMPORTANT: If you stored username/userId, retrieve them here
-            // For simplicity, we'll refetch them on DashboardPage, or you can
-            // pass them if you stored them persistently.
-            return const DashboardPage(
-              loggedInUsername:
-                  "Bienvenue", // Placeholder, will be fetched or stored
-              loggedInUserId: 0, // Placeholder
-            );
+          } else if (snapshot.hasData &&
+              snapshot.data!['phpSessionCookie'] != null) {
+            final username =
+                snapshot.data!['loggedInUsername'] ?? 'Utilisateur';
+            final userRole = snapshot.data!['user_role'] ?? 'vendeur';
+
+            if (userRole == 'vendeur' || userRole == 'magasinier') {
+              return DashboardPageVendeur(loggedInUsername: username);
+            } else {
+              return DashboardPage(
+                loggedInUsername: username,
+                loggedInUserId: 0,
+              );
+            }
           } else {
-            return const LoginPage(); // User not logged in, show login page
+            return const LoginPage();
           }
         },
       ),
     );
   }
 
-  // Helper to check login status
-  static Future<bool> _checkLoginStatus() async {
+  static Future<Map<String, String?>> _checkLoginStatus() async {
     final prefs = await SharedPreferences.getInstance();
     final phpSessionCookie = prefs.getString('phpSessionCookie');
-    // If you need more robust validation, you could make a quick API call
-    // to your PHP backend to validate the session.
-    return phpSessionCookie != null && phpSessionCookie.isNotEmpty;
+    final loggedInUsername = prefs.getString('loggedInUsername');
+    final userRole = prefs.getString('user_role');
+
+    return {
+      'phpSessionCookie': phpSessionCookie,
+      'loggedInUsername': loggedInUsername,
+      'user_role': userRole,
+    };
   }
 }
 
@@ -105,8 +110,11 @@ class _LoginPageState extends State<LoginPage> {
   void initState() {
     super.initState();
     _fetchUsernames();
+    _fetchUsernames();
+    _passwordVisible = false; // Initialisez la variable
   }
 
+  bool _passwordVisible = false; // <-- Ajoutez cette ligne
   @override
   void dispose() {
     _passwordController.dispose();
@@ -120,7 +128,6 @@ class _LoginPageState extends State<LoginPage> {
     });
     try {
       final response = await http.get(Uri.parse(ApiConstants.usernamesApi));
-      print('Réponse usernames: ${response.body}');
       if (response.statusCode == 200) {
         final List<dynamic> users = jsonDecode(response.body);
         setState(() {
@@ -137,7 +144,7 @@ class _LoginPageState extends State<LoginPage> {
       }
     } catch (e) {
       setState(() {
-        _error = "Erreur de connexion au serveur pour les utilisateurs: $e";
+        _error = "Erreur de connexion au serveur \npour les utilisateurs ";
       });
     } finally {
       setState(() {
@@ -173,7 +180,6 @@ class _LoginPageState extends State<LoginPage> {
           'password': _passwordController.text,
         }),
       );
-      print('Réponse login: ${response.body}');
 
       setState(() {
         _loading = false;
@@ -182,11 +188,9 @@ class _LoginPageState extends State<LoginPage> {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
-        // --- IMPORTANT: Extract and save the session cookie ---
         String? phpSessionCookie;
         if (response.headers.containsKey('set-cookie')) {
           final setCookieHeader = response.headers['set-cookie']!;
-          // Find the PHPSESSID cookie. It might look like "PHPSESSID=your_session_id; path=/"
           final cookies = setCookieHeader.split(';');
           for (var cookie in cookies) {
             if (cookie.trim().startsWith('PHPSESSID=')) {
@@ -199,37 +203,36 @@ class _LoginPageState extends State<LoginPage> {
         if (phpSessionCookie != null && phpSessionCookie.isNotEmpty) {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('phpSessionCookie', phpSessionCookie);
-          if (data['role'] != null) {
-            await prefs.setString('user_role', data['role']);
+          await prefs.setString('user_role', data['role'] ?? '');
+          await prefs.setString('loggedInUsername', data['username'] ?? '');
+
+          final User loggedInUser = User.fromJson(data);
+
+          Widget dashboard;
+          if (loggedInUser.role == 'vendeur' ||
+              loggedInUser.role == 'magasinier') {
+            dashboard =
+                DashboardPageVendeur(loggedInUsername: loggedInUser.username);
+          } else {
+            dashboard = DashboardPage(
+              loggedInUsername: loggedInUser.username,
+              loggedInUserId: loggedInUser.userId,
+            );
           }
-          print('PHPSESSID saved: $phpSessionCookie');
+
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => dashboard,
+            ),
+          );
         } else {
-          print('PHPSESSID not found in headers or empty.');
           setState(() {
             _error = "Login réussi, mais cookie de session non trouvé.";
           });
-          return; // Prevent navigation if session cookie isn't saved
+          return;
         }
-        // --- End cookie saving ---
-
-        final User loggedInUser = User.fromJson(data);
-
-        Widget dashboard;
-        if (loggedInUser.role == 'vendeur') {
-          dashboard = const DashboardPageVendeur();
-        } else {
-          dashboard = DashboardPage(
-            loggedInUsername: loggedInUser.username,
-            loggedInUserId: loggedInUser.userId,
-          );
-        }
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => dashboard,
-          ),
-        );
       } else {
         setState(() {
           _error = data['message'] ??
@@ -247,7 +250,6 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      //   appBar: AppBar(title: const Text('Connexion')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Center(
@@ -257,11 +259,12 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.storefront,
-                    size: 60,
-                    color: Theme.of(context).primaryColor,
-                  ),
+                  // Icon(
+                  //   Icons.storefront,
+                  //   size: 60,
+                  //   color: Theme.of(context).primaryColor,
+                  // ),
+                  Image.asset('assets/logo.png', height: 150, width: 300),
                   const SizedBox(height: 30),
                   Text(
                     'Connectez-vous à votre compte',
@@ -302,17 +305,37 @@ class _LoginPageState extends State<LoginPage> {
                           isExpanded: true,
                         ),
                   const SizedBox(height: 15),
+                  // ... votre code existant
                   TextFormField(
+                    keyboardType: TextInputType
+                        .number, // Modifiez pour un clavier de texte normal
                     controller: _passwordController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Mot de passe',
-                      prefixIcon: Icon(Icons.lock),
+                      prefixIcon: const Icon(Icons.lock),
+                      suffixIcon: IconButton(
+                        // <-- Ajoutez ce widget
+                        icon: Icon(
+                          // Bascule entre les icônes basées sur l'état
+                          _passwordVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          // Mettez à jour l'état de la variable _passwordVisible
+                          setState(() {
+                            _passwordVisible = !_passwordVisible;
+                          });
+                        },
+                      ),
                     ),
-                    obscureText: true,
+                    obscureText:
+                        !_passwordVisible, // <-- Utilisez la variable d'état ici
                     validator: (val) => val == null || val.isEmpty
                         ? 'Veuillez entrer votre mot de passe'
                         : null,
                   ),
+// ... votre code existant
                   const SizedBox(height: 30),
                   _loading
                       ? const CircularProgressIndicator()
@@ -320,7 +343,6 @@ class _LoginPageState extends State<LoginPage> {
                           onPressed: _login,
                           child: const Text('Se connecter'),
                         ),
-                  Image.asset('assets/logo.png', height: 100, width: 100),
                 ],
               ),
             ),

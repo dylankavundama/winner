@@ -6,7 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
 class SortiePage extends StatefulWidget {
-  const SortiePage({Key? key}) : super(key: key);
+  final String loggedInUsername;
+
+  const SortiePage({Key? key, required this.loggedInUsername}) : super(key: key);
 
   @override
   State<SortiePage> createState() => _SortiePageState();
@@ -21,7 +23,6 @@ class _SortiePageState extends State<SortiePage> {
   String month = '';
   String year = '';
 
-  // Formulaire d'ajout
   final TextEditingController montantController = TextEditingController();
   final TextEditingController motifController = TextEditingController();
   String typeAjout = 'normal';
@@ -76,43 +77,55 @@ class _SortiePageState extends State<SortiePage> {
   }
 
   Future<void> _addSortie() async {
-    setState(() => isAdding = true);
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt('user_id') ?? 1;
-      final montant = double.tryParse(montantController.text) ?? 0.0;
-      final motif = motifController.text.trim();
-      if (montant <= 0 || motif.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez remplir tous les champs.')));
-        setState(() => isAdding = false);
-        return;
-      }
-      final response = await http.post(
-        Uri.parse(ApiConstants.baseUrl + '/sorties.php'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'user_id': userId,
-          'montant': montant,
-          'motif': motif,
-          'type': typeAjout,
-        }),
-      );
-      final data = json.decode(response.body);
-      if (data['success'] == true) {
-        montantController.clear();
-        motifController.clear();
-        setState(() => typeAjout = 'normal');
-        _fetchSorties();
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sortie enregistrée avec succès!')));
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message'] ?? 'Erreur lors de l\'enregistrement.')));
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
-    } finally {
+  setState(() => isAdding = true);
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('user_id') ?? 1;
+    final username = prefs.getString('loggedInUsername'); // Récupère le nom d'utilisateur
+
+    final montant = double.tryParse(montantController.text) ?? 0.0;
+    final motif = motifController.text.trim();
+
+    if (montant <= 0 || motif.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez remplir tous les champs.')));
       setState(() => isAdding = false);
+      return;
     }
+    
+    // Assurez-vous d'avoir une vérification pour le nom d'utilisateur
+    if (username == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nom d\'utilisateur non trouvé. Réessayez de vous connecter.')));
+      setState(() => isAdding = false);
+      return;
+    }
+
+    final response = await http.post(
+      Uri.parse(ApiConstants.baseUrl + '/sorties.php'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'user_id': userId,
+        'username': username, // Ajout du nom d'utilisateur ici
+        'montant': montant,
+        'motif': motif,
+        'type': typeAjout,
+      }),
+    );
+    final data = json.decode(response.body);
+    if (data['success'] == true) {
+      montantController.clear();
+      motifController.clear();
+      setState(() => typeAjout = 'normal');
+      _fetchSorties();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sortie enregistrée avec succès!')));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message'] ?? 'Erreur lors de l\'enregistrement.')));
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+  } finally {
+    setState(() => isAdding = false);
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -130,6 +143,8 @@ class _SortiePageState extends State<SortiePage> {
                   child: ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
+                      // _buildUserSection(),
+                      // const SizedBox(height: 24),
                       _buildAddForm(),
                       const SizedBox(height: 24),
                       _buildFilters(),
@@ -138,6 +153,30 @@ class _SortiePageState extends State<SortiePage> {
                     ],
                   ),
                 ),
+    );
+  }
+
+  Widget _buildUserSection() {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            const Icon(Icons.person, color: Colors.blueGrey, size: 30),
+            const SizedBox(width: 12),
+            Text(
+              'Utilisateur: ${widget.loggedInUsername}',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.blueGrey,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -154,7 +193,7 @@ class _SortiePageState extends State<SortiePage> {
             const SizedBox(height: 12),
             TextField(
               controller: montantController,
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: const InputDecoration(labelText: 'Montant'),
             ),
             const SizedBox(height: 8),
@@ -176,7 +215,9 @@ class _SortiePageState extends State<SortiePage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                icon: isAdding ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.save),
+                icon: isAdding
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.save),
                 label: const Text('Enregistrer la sortie'),
                 onPressed: isAdding ? null : _addSortie,
               ),
@@ -203,7 +244,10 @@ class _SortiePageState extends State<SortiePage> {
                 DropdownMenuItem(value: 'normal', child: Text('Normal')),
                 DropdownMenuItem(value: 'transaction', child: Text('Transaction')),
               ],
-              onChanged: (v) => setState(() { typeFilter = v ?? ''; _fetchSorties(); }),
+              onChanged: (v) => setState(() {
+                typeFilter = v ?? '';
+                _fetchSorties();
+              }),
             ),
             const SizedBox(width: 8),
             Flexible(
@@ -219,7 +263,11 @@ class _SortiePageState extends State<SortiePage> {
                     lastDate: DateTime.now(),
                   );
                   if (picked != null) {
-                    setState(() { date = DateFormat('yyyy-MM-dd').format(picked); month = ''; year = ''; });
+                    setState(() {
+                      date = DateFormat('yyyy-MM-dd').format(picked);
+                      month = '';
+                      year = '';
+                    });
                     _fetchSorties();
                   }
                 },
@@ -234,12 +282,16 @@ class _SortiePageState extends State<SortiePage> {
                 onTap: () async {
                   final picked = await showDatePicker(
                     context: context,
-                    initialDate: month.isNotEmpty ? DateTime.parse(month + '-01') : DateTime.now(),
+                    initialDate: month.isNotEmpty ? DateTime.parse('$month-01') : DateTime.now(),
                     firstDate: DateTime(2020),
                     lastDate: DateTime.now(),
                   );
                   if (picked != null) {
-                    setState(() { month = DateFormat('yyyy-MM').format(picked); date = ''; year = ''; });
+                    setState(() {
+                      month = DateFormat('yyyy-MM').format(picked);
+                      date = '';
+                      year = '';
+                    });
                     _fetchSorties();
                   }
                 },
@@ -259,7 +311,11 @@ class _SortiePageState extends State<SortiePage> {
                     lastDate: DateTime.now(),
                   );
                   if (picked != null) {
-                    setState(() { year = DateFormat('yyyy').format(picked); date = ''; month = ''; });
+                    setState(() {
+                      year = DateFormat('yyyy').format(picked);
+                      date = '';
+                      month = '';
+                    });
                     _fetchSorties();
                   }
                 },
@@ -292,13 +348,14 @@ class _SortiePageState extends State<SortiePage> {
                   DataColumn(label: Text('Date')),
                 ],
                 rows: sorties.map<DataRow>((s) => DataRow(cells: [
-                  DataCell(Text(s['id'].toString())),
-                  DataCell(Text(s['username'] ?? '')),
-                  DataCell(Text('${s['montant']} \$')),
-                  DataCell(Text(s['motif'] ?? '')),
-                  DataCell(_buildTypeBadge(s['type'] ?? '')),
-                  DataCell(Text(s['date_sortie'] ?? '')),
-                ])).toList(),
+                      DataCell(Text(s['id'].toString())),
+                      // DataCell(Text(s['username'] ?? '')),
+                      DataCell(Text(widget.loggedInUsername)),
+                      DataCell(Text('${s['montant']} \$')),
+                      DataCell(Text(s['motif'] ?? '')),
+                      DataCell(_buildTypeBadge(s['type'] ?? '')),
+                      DataCell(Text(s['date_sortie'] ?? '')),
+                    ])).toList(),
               ),
             ),
     );
@@ -325,4 +382,4 @@ class _SortiePageState extends State<SortiePage> {
       );
     }
   }
-} 
+}

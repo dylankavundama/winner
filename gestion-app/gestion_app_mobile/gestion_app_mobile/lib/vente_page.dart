@@ -28,12 +28,15 @@ class _VentePageState extends State<VentePage> {
   final TextEditingController _clientAddressController = TextEditingController();
   final TextEditingController _garantieController = TextEditingController();
   final TextEditingController _imeiController = TextEditingController();
+  final TextEditingController _productSearchController = TextEditingController();
 
   // Données
   List<SaleProduct> _selectedProducts = [];
   List<Product> _allProducts = [];
+  List<Product> _filteredProducts = [];
   List<Client> _clients = [];
   Client? _selectedClient;
+  bool _showProductDropdown = false;
 
   final NumberFormat _currencyFormatter = NumberFormat.currency(
     locale: 'fr_FR',
@@ -53,6 +56,7 @@ class _VentePageState extends State<VentePage> {
     _clientAddressController.dispose();
     _garantieController.dispose();
     _imeiController.dispose();
+    _productSearchController.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -123,6 +127,22 @@ class _VentePageState extends State<VentePage> {
     }
   }
 
+  // Méthode pour filtrer les produits
+  void _filterProducts(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredProducts = [];
+        _showProductDropdown = false;
+      } else {
+        _filteredProducts = _allProducts.where((product) {
+          return product.name.toLowerCase().contains(query.toLowerCase()) ||
+                 product.id.toString().contains(query);
+        }).toList();
+        _showProductDropdown = _filteredProducts.isNotEmpty;
+      }
+    });
+  }
+
   void _nextPage() {
     if (_pageController.page!.toInt() < 3) {
       _pageController.nextPage(
@@ -162,25 +182,59 @@ class _VentePageState extends State<VentePage> {
 
   Future<void> _handleNextClientStep() async {
     final newClientName = _clientNameController.text.trim();
+    
+    // Priorité: nouveau client si saisi
     if (newClientName.isNotEmpty) {
-      // Créer le client via l'API
       final clientId = await _addNewClient(newClientName);
       if (clientId != null) {
         final newClient = Client(id: clientId, name: newClientName);
         setState(() {
           _clients.add(newClient);
           _selectedClient = newClient;
-          _clientNameController.clear();
         });
+        _clientNameController.clear();
         _nextPage();
       } else {
         _showError('Erreur lors de la création du client');
       }
-    } else if (_selectedClient != null) {
+    } 
+    // Sinon, vérifier qu'un client existant est sélectionné
+    else if (_selectedClient != null) {
       _nextPage();
-    } else {
+    } 
+    // Aucun client sélectionné
+    else {
       _showError('Veuillez sélectionner ou créer un client');
     }
+  }
+
+  // Méthode améliorée pour ajouter un produit (avec validation)
+  void _addProduct(Product product) {
+    // Vérifier si le produit est déjà ajouté
+    final isAlreadyAdded = _selectedProducts.any((p) => p.id == product.id);
+    if (isAlreadyAdded) {
+      _showError('Ce produit est déjà dans la liste');
+      return;
+    }
+    
+    // Vérifier le stock
+    if (product.quantity <= 0) {
+      _showError('Stock insuffisant pour ${product.name}');
+      return;
+    }
+    
+    setState(() {
+      _selectedProducts.add(SaleProduct(
+        id: product.id,
+        name: product.name,
+        prixVente: product.prixVente,
+        quantity: product.quantity,
+        quantityToSell: 1,
+        priceOverride: product.prixVente,
+      ));
+    });
+    
+    _showSuccess('${product.name} ajouté à la vente');
   }
 
   Future<void> _submitSale() async {
@@ -368,6 +422,7 @@ class _VentePageState extends State<VentePage> {
               labelText: 'Client existant',
               border: OutlineInputBorder(),
             ),
+            value: _selectedClient,
             items: _clients
                 .map((client) => DropdownMenuItem(
                       value: client,
@@ -378,11 +433,16 @@ class _VentePageState extends State<VentePage> {
             hint: const Text('Sélectionnez un client'),
           ),
           const SizedBox(height: 16),
+          const Text('OU', 
+              textAlign: TextAlign.center,
+              style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
           TextFormField(
             controller: _clientNameController,
             decoration: const InputDecoration(
               labelText: 'Nouveau client*',
               border: OutlineInputBorder(),
+              hintText: 'Nom du nouveau client',
             ),
             validator: (value) =>
                 value?.isEmpty ?? true ? 'Ce champ est obligatoire' : null,
@@ -447,6 +507,64 @@ class _VentePageState extends State<VentePage> {
     );
   }
 
+  // Widget de recherche de produits
+  Widget _buildProductSearchWidget() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: _productSearchController,
+          decoration: const InputDecoration(
+            labelText: 'Rechercher un produit',
+            hintText: 'Tapez le nom du produit...',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.search),
+          ),
+          onChanged: _filterProducts,
+          onTap: () {
+            if (_productSearchController.text.isNotEmpty) {
+              _filterProducts(_productSearchController.text);
+            }
+          },
+        ),
+        if (_showProductDropdown) ...[
+          const SizedBox(height: 8),
+          Container(
+            constraints: const BoxConstraints(maxHeight: 200),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: _filteredProducts.length,
+              itemBuilder: (context, index) {
+                final product = _filteredProducts[index];
+                final isAlreadyAdded = _selectedProducts.any((p) => p.id == product.id);
+                
+                return ListTile(
+                  title: Text(product.name),
+                  subtitle: Text('Stock: ${product.quantity} - Prix: ${product.prixVente.toStringAsFixed(2)}€'),
+                  trailing: isAlreadyAdded 
+                    ? const Icon(Icons.check, color: Colors.green)
+                    : product.quantity > 0 
+                      ? const Icon(Icons.add_circle_outline, color: Colors.blue)
+                      : const Icon(Icons.block, color: Colors.red),
+                  enabled: !isAlreadyAdded && product.quantity > 0,
+                  onTap: isAlreadyAdded || product.quantity <= 0 ? null : () {
+                    _addProduct(product);
+                    _productSearchController.clear();
+                    _filterProducts('');
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildProductSelectionPage() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -456,74 +574,111 @@ class _VentePageState extends State<VentePage> {
           const Text('Produits à Vendre',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-          DropdownButtonFormField<Product>(
-            isExpanded: true,
-            decoration: const InputDecoration(
-              labelText: 'Sélectionner un produit',
-              border: OutlineInputBorder(),
-            ),
-            items: _allProducts
-                .map((product) => DropdownMenuItem(
-                      value: product,
-                      child:
-                          Text('${product.name} (Stock: ${product.quantity})'),
-                    ))
-                .toList(),
-            onChanged: (product) {
-              if (product != null) {
-                setState(() {
-                  _selectedProducts.add(SaleProduct(
-                    id: product.id,
-                    name: product.name,
-                    prixVente: product.prixVente,
-                    quantity: product.quantity,
-                    quantityToSell: 1,
-                    priceOverride: product.prixVente,
-                  ));
-                });
-              }
-            },
+          
+          // Widget de recherche de produits - FIXE dans un container
+          SizedBox(
+            height: _showProductDropdown ? 280 : 80, // Hauteur fixe
+            child: _buildProductSearchWidget(),
           ),
-          const SizedBox(height: 24),
-          if (_selectedProducts.isNotEmpty) ...[
-            const Text('Produits sélectionnés:',
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            ..._selectedProducts.map((product) => ListTile(
-                  title: Text(product.name),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                          'Prix: ${_currencyFormatter.format(product.priceOverride)}'),
-                      Row(
+          
+          const SizedBox(height: 16),
+          
+          // Zone des produits sélectionnés - utilise l'espace restant
+          Expanded(
+            child: _selectedProducts.isNotEmpty 
+              ? Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Produits sélectionnés:',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text('(${_selectedProducts.length} produit${_selectedProducts.length > 1 ? 's' : ''})',
+                            style: TextStyle(color: Colors.grey[600])),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: _selectedProducts.length,
+                        itemBuilder: (context, index) {
+                          final product = _selectedProducts[index];
+                          return Card(
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            child: ListTile(
+                              title: Text(product.name),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Prix: ${_currencyFormatter.format(product.priceOverride)}'),
+                                  Row(
+                                    children: [
+                                      const Text('Quantité: '),
+                                      IconButton(
+                                        icon: const Icon(Icons.remove_circle_outline),
+                                        onPressed: () => _updateProductQuantity(
+                                            product.id, product.quantityToSell - 1),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          border: Border.all(color: Colors.grey),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text('${product.quantityToSell}'),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.add_circle_outline),
+                                        onPressed: () => _updateProductQuantity(
+                                            product.id, product.quantityToSell + 1),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () => _removeProduct(product.id),
+                                tooltip: 'Supprimer ce produit',
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          IconButton(
-                            icon: const Icon(Icons.remove),
-                            onPressed: () => _updateProductQuantity(
-                                product.id, product.quantityToSell - 1),
-                          ),
-                          Text('${product.quantityToSell}'),
-                          IconButton(
-                            icon: const Icon(Icons.add),
-                            onPressed: () => _updateProductQuantity(
-                                product.id, product.quantityToSell + 1),
-                          ),
+                          const Text('Total:', 
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          Text(_currencyFormatter.format(_calculateTotal()),
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
                         ],
                       ),
+                    ),
+                  ],
+                )
+              : Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.shopping_cart_outlined, size: 64, color: Colors.grey[400]),
+                      const SizedBox(height: 16),
+                      Text('Aucun produit sélectionné', 
+                           style: TextStyle(fontSize: 16, color: Colors.grey[600])),
+                      const SizedBox(height: 8),
+                      Text('Utilisez la barre de recherche pour ajouter des produits',
+                           style: TextStyle(color: Colors.grey[500])),
                     ],
                   ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => _removeProduct(product.id),
-                  ),
-                )),
-            const Divider(),
-            Text(
-              'Total: ${_currencyFormatter.format(_calculateTotal())}',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ],
+                ),
+          ),
         ],
       ),
     );
