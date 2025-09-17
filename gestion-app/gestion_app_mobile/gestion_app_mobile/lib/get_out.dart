@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:gestion_app_mobile/stock.dart';
+
+import 'package:gestion_app_mobile/stock_add_out.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
@@ -23,7 +24,46 @@ class _StockOutHistoryPageState extends State<StockOutHistoryPage> {
     _fetchStockOutRecords();
   }
 
-  // Fetch stock out records from the API
+  // Fonction pour mettre à jour le statut de paiement
+  Future<void> _updatePaymentStatus(int recordId, int newStatus) async {
+    final url =
+        Uri.parse('${ApiConstants.updatePaymentStatusApi}?id=$recordId');
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'paid_status': newStatus}),
+      );
+
+      final data = json.decode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        // Mettre à jour l'état local de la liste sans tout recharger
+        setState(() {
+          final index =
+              _stockOutRecords.indexWhere((record) => record['id'] == recordId);
+          if (index != -1) {
+            _stockOutRecords[index]['paid_status'] = newStatus;
+          }
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Statut mis à jour avec succès!')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  data['message'] ?? 'Échec de la mise à jour du statut.')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur de connexion: $e')),
+      );
+    }
+  }
+
+  // Fonction pour récupérer l'historique des sorties de stock
   Future<void> _fetchStockOutRecords() async {
     setState(() {
       _isLoading = true;
@@ -59,7 +99,7 @@ class _StockOutHistoryPageState extends State<StockOutHistoryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Historique des Sorties',
+        title: const Text('Sorties de Stock',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.blueGrey[800],
         elevation: 4,
@@ -91,8 +131,14 @@ class _StockOutHistoryPageState extends State<StockOutHistoryPage> {
                           final formattedDate = DateFormat('dd/MM/yyyy HH:mm')
                               .format(DateTime.parse(record['out_date']));
 
+                          // Déterminer le statut et la couleur
+                          final isPaid = record['paid_status'] == 1;
+                          final statusText = isPaid ? 'Payé' : 'Impayé';
+                          final statusColor =
+                              isPaid ? Colors.green : Colors.red;
+
                           return Card(
-                            elevation: 2,
+                            elevation: 3,
                             margin: const EdgeInsets.symmetric(
                                 vertical: 8, horizontal: 4),
                             child: ListTile(
@@ -106,18 +152,55 @@ class _StockOutHistoryPageState extends State<StockOutHistoryPage> {
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const SizedBox(height: 4),
-                                  Text('Quantité: ${record['quantity']}'),
-                                  Text('Raison: ${record['reason']}'),
-                                  // Use client_name if available, otherwise show "Non spécifié"
-                                  Text(
-                                      'Client: ${record['client_name'] ?? 'Non spécifié'}'),
+                                 
+                                  Padding(
+                                    padding: const EdgeInsets.all(3.0),
+                                    child:
+                                        Text('Quantité: ${record['quantity']}'),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(3.0),
+                                    child: Text(
+                                        'Client: ${record['client_name'] ?? 'Non spécifié'}'),
+                                  ),
+
+                                  Padding(
+                                    padding: const EdgeInsets.all(3.0),
+                                    child: Text(
+                                      formattedDate,
+                                      style: const TextStyle(
+                                          fontSize: 12, color: Colors.grey),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(3.0),
+                                    child: Text(
+                                      statusText,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: statusColor,
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ),
-                              trailing: Text(
-                                formattedDate,
-                                style: const TextStyle(
-                                    fontSize: 12, color: Colors.grey),
+                              trailing: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(
+                                      isPaid
+                                          ? Icons.check_circle
+                                          : Icons.radio_button_unchecked,
+                                      color: statusColor,
+                                    ),
+                                    onPressed: () {
+                                      _updatePaymentStatus(
+                                          record['id'], isPaid ? 0 : 1);
+                                    },
+                                  ),
+                                ],
                               ),
                             ),
                           );

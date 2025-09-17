@@ -264,7 +264,7 @@ class _LoginPageState extends State<LoginPage> {
                   //   size: 60,
                   //   color: Theme.of(context).primaryColor,
                   // ),
-                  Image.asset('assets/logo.png', height: 150, width: 300),
+                  Image.asset('assets/logo.png', height: 170, width: 300),
                   const SizedBox(height: 30),
                   Text(
                     'Connectez-vous à votre compte',

@@ -8,7 +8,7 @@ import 'package:gestion_app_mobile/main.dart';
 import 'package:gestion_app_mobile/product_page.dart';
 import 'package:gestion_app_mobile/report_page.dart';
 import 'package:gestion_app_mobile/sale_list_page.dart';
-import 'package:gestion_app_mobile/stock.dart';
+ 
 import 'package:gestion_app_mobile/vente_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -17,7 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gestion_app_mobile/client.dart';
 
 import 'sortie_page.dart';
-import 'package:gestion_app_mobile/detail_sale_page.dart';
+ 
 
 class DashboardPage extends StatefulWidget {
   final String loggedInUsername;
@@ -332,7 +332,7 @@ class _DashboardPageState extends State<DashboardPage> {
             Divider(),
             ListTile(
               leading: const Icon(Icons.approval),
-              title: const Text('Stock'),
+              title: const Text('Stock Sortie'),
               onTap: () {
                 Navigator.push(
                   context,

@@ -4,7 +4,7 @@ import 'package:gestion_app_mobile/get_out.dart';
 import 'package:gestion_app_mobile/invoice_list_page.dart';
 import 'package:gestion_app_mobile/main.dart';
 import 'package:gestion_app_mobile/product_page.dart';
-import 'package:gestion_app_mobile/stock.dart';
+
 import 'package:gestion_app_mobile/vente_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -17,7 +17,8 @@ import 'package:intl/intl.dart';
 class DashboardPageVendeur extends StatefulWidget {
   final String loggedInUsername;
 
-  const DashboardPageVendeur({Key? key, required this.loggedInUsername}) : super(key: key);
+  const DashboardPageVendeur({Key? key, required this.loggedInUsername})
+      : super(key: key);
 
   @override
   State<DashboardPageVendeur> createState() => _DashboardPageVendeurState();
@@ -41,7 +42,8 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
       errorMessage = null;
     });
     try {
-      final response = await http.get(Uri.parse(ApiConstants.baseUrl + '/sales.php'));
+      final response =
+          await http.get(Uri.parse(ApiConstants.baseUrl + '/sales.php'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
@@ -51,7 +53,8 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
           });
         } else {
           setState(() {
-            errorMessage = data['message'] ?? 'Erreur lors du chargement des ventes';
+            errorMessage =
+                data['message'] ?? 'Erreur lors du chargement des ventes';
             isLoading = false;
           });
         }
@@ -147,7 +150,10 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
             UserAccountsDrawerHeader(
               decoration: const BoxDecoration(color: Colors.blueGrey),
               accountName: Text(widget.loggedInUsername,
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold)),
               accountEmail: null,
               currentAccountPicture: const CircleAvatar(
                 backgroundColor: Colors.white,
@@ -161,7 +167,8 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => DashboardPageVendeur(loggedInUsername: widget.loggedInUsername),
+                    builder: (context) => DashboardPageVendeur(
+                        loggedInUsername: widget.loggedInUsername),
                   ),
                 );
               },
@@ -173,7 +180,8 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => DashboardPageVendeur(loggedInUsername: widget.loggedInUsername),
+                    builder: (context) => DashboardPageVendeur(
+                        loggedInUsername: widget.loggedInUsername),
                   ),
                 );
               },
@@ -221,24 +229,27 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
             //   },
             // ),
 
-                      ListTile(
+            ListTile(
               leading: const Icon(Icons.money_off),
               title: const Text('Sorties'),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => SortiePage(loggedInUsername: widget.loggedInUsername)),
+                  MaterialPageRoute(
+                      builder: (context) => SortiePage(
+                          loggedInUsername: widget.loggedInUsername)),
                 );
               },
             ),
-                        Divider(),
+
             ListTile(
               leading: const Icon(Icons.approval),
-              title: const Text('Stock'),
+              title: const Text('Sortie Stock'),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => StockOutHistoryPage()),
+                  MaterialPageRoute(
+                      builder: (context) => StockOutHistoryPage()),
                 );
               },
             ),
@@ -274,7 +285,8 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
                           onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => DetailSalePage(saleId: vente['id']),
+                              builder: (context) =>
+                                  DetailSalePage(saleId: vente['id']),
                             ),
                           ),
                         ),
