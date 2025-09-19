@@ -154,18 +154,18 @@ class _StockOutHistoryPageState extends State<StockOutHistoryPage> {
                                 children: [
                                  
                                   Padding(
-                                    padding: const EdgeInsets.all(3.0),
+                                    padding: const EdgeInsets.all(1.0),
                                     child:
                                         Text('Quantité: ${record['quantity']}'),
                                   ),
                                   Padding(
-                                    padding: const EdgeInsets.all(3.0),
+                                    padding: const EdgeInsets.all(1.0),
                                     child: Text(
                                         'Client: ${record['client_name'] ?? 'Non spécifié'}'),
                                   ),
 
                                   Padding(
-                                    padding: const EdgeInsets.all(3.0),
+                                    padding: const EdgeInsets.all(1.0),
                                     child: Text(
                                       formattedDate,
                                       style: const TextStyle(
@@ -173,7 +173,7 @@ class _StockOutHistoryPageState extends State<StockOutHistoryPage> {
                                     ),
                                   ),
                                   Padding(
-                                    padding: const EdgeInsets.all(3.0),
+                                    padding: const EdgeInsets.all(1.0),
                                     child: Text(
                                       statusText,
                                       style: TextStyle(

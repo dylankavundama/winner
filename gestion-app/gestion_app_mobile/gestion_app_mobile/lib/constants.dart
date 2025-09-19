@@ -4,8 +4,8 @@ class ApiConstants {
   // For Android Emulator: 'http://10.0.2.2/your_pos_project_folder'
   // For Physical Device: 'http://YOUR_MACHINE_IP/your_pos_project_folder'
   static const String baseUrl =
-      // 'https://winnercompany.net/api'; // Base for all API calls
-      'http://192.168.1.69/winner/gestion-app/gestion-app/api/';
+      'https://winnercompany.net/api'; // Base for all API calls
+      // 'http://192.168.1.69/winner/gestion-app/gestion-app/api/';
   static const String usernamesApi = '$baseUrl/usernames.php';
   static const String loginApi = '$baseUrl/login.php';
   static const String dashboardStatsApi =
