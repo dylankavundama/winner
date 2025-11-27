@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($sale) {
             $amount = $sale['total'];
             $stmt = $pdo->prepare('INSERT INTO invoices (sale_id, amount, status) VALUES (?, ?, ?)');
-            $stmt->execute([$sale_id, $amount, 'impayée']);
+            $stmt->execute([$sale_id, $amount, 'payée']);
             $message = 'Facture générée avec succès!';
         } else {
             $message = 'Vente introuvable.';
@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <option value="">-- Sélectionner --</option>
                                 <?php foreach ($sales as $sale): ?>
                                     <option value="<?= $sale['id'] ?>" <?= ($sale_id_selected == $sale['id']) ? 'selected' : '' ?>>
-                                        Vente #<?= $sale['id'] ?> - <?= htmlspecialchars($sale['client_name']) ?> (<?= $sale['sale_date'] ?>, <?= $sale['total'] ?> €)
+                                        Vente #<?= $sale['id'] ?> - <?= htmlspecialchars($sale['client_name']) ?> (<?= $sale['sale_date'] ?>, <?= $sale['total'] ?> $)
                                     </option>
                                 <?php endforeach; ?>
                             </select>

@@ -121,7 +121,35 @@ class _StockOutHistoryPageState extends State<StockOutHistoryPage> {
                   child: Text(_errorMessage!,
                       style: const TextStyle(color: Colors.red)))
               : _stockOutRecords.isEmpty
-                  ? const Center(child: Text('Aucune sortie de stock trouvée.'))
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            size: 64,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Aucune sortie de stock trouvée',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Les sorties de stock apparaîtront ici',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
                   : Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: ListView.builder(

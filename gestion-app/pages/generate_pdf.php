@@ -42,12 +42,12 @@ $pdf->SetFont('Arial','',12);
 foreach ($details as $d) {
     $pdf->Cell(80,8,utf8_decode($d['name']),1);
     $pdf->Cell(30,8,$d['quantity'],1);
-    $pdf->Cell(40,8,number_format($d['price'],2).' €',1);
-    $pdf->Cell(40,8,number_format($d['price']*$d['quantity'],2).' €',1);
+    $pdf->Cell(40,8,number_format($d['price'],2).' $',1);
+    $pdf->Cell(40,8,number_format($d['price']*$d['quantity'],2).' $',1);
     $pdf->Ln();
 }
 $pdf->SetFont('Arial','B',12);
 $pdf->Cell(150,8,'Total',1);
-$pdf->Cell(40,8,number_format($invoice['amount'],2).' €',1);
+    $pdf->Cell(40,8,number_format($invoice['amount'],2).' $',1);
 $pdf->Ln();
 $pdf->Output('I', 'Facture_'.$invoice['id'].'.pdf'); 

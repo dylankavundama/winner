@@ -39,8 +39,8 @@ $solde = 0;
             <label>Numéro de reçu : <input type="text" name="numero_recu" required></label>
             <label>Date : <input type="date" name="date" required></label>
             <label>Désignation : <input type="text" name="designation" required></label>
-            <label>Entrée (€) : <input type="number" step="0.01" name="entree" value="0"></label>
-            <label>Dépense (€) : <input type="number" step="0.01" name="depense" value="0"></label>
+            <label>Entrée ($) : <input type="number" step="0.01" name="entree" value="0"></label>
+            <label>Dépense ($) : <input type="number" step="0.01" name="depense" value="0"></label>
             <button type="submit">Ajouter</button>
         </form>
     </div>
@@ -50,8 +50,8 @@ $solde = 0;
                 <th>Numéro de reçu</th>
                 <th>Date</th>
                 <th>Désignation</th>
-                <th>Entrées en euros</th>
-                <th>Dépenses en euros</th>
+                <th>Entrées en dollars</th>
+                <th>Dépenses en dollars</th>
                 <th>Solde</th>
             </tr>
         </thead>
@@ -64,9 +64,9 @@ $solde = 0;
                     <td><?= htmlspecialchars($mvt['numero_recu']) ?></td>
                     <td><?= htmlspecialchars($mvt['date']) ?></td>
                     <td><?= htmlspecialchars($mvt['designation']) ?></td>
-                    <td><?= number_format($mvt['entree'], 2, ',', ' ') ?> €</td>
-                    <td><?= number_format($mvt['depense'], 2, ',', ' ') ?> €</td>
-                    <td><?= number_format($solde, 2, ',', ' ') ?> €</td>
+                    <td><?= number_format($mvt['entree'], 2, ',', ' ') ?> $</td>
+                    <td><?= number_format($mvt['depense'], 2, ',', ' ') ?> $</td>
+                    <td><?= number_format($solde, 2, ',', ' ') ?> $</td>
                 </tr>
             <?php endforeach; ?>
         </tbody>

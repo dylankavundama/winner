@@ -158,7 +158,35 @@ class _SaleListPageState extends State<SaleListPage> {
           : errorMessage != null
               ? Center(child: Text(errorMessage!))
               : sales.isEmpty
-                  ? const Center(child: Text('Aucune vente trouvée.'))
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.shopping_cart_outlined,
+                            size: 64,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Aucune vente trouvée',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Les ventes enregistrées apparaîtront ici',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
                   : RefreshIndicator(
                       onRefresh: _fetchSales,
                       child: sortMode == 'date'

@@ -79,7 +79,7 @@ class _DetailSalePageState extends State<DetailSalePage> {
         ? (sale!['total'] as num).toDouble()
         : double.tryParse(sale!['total'].toString()) ?? 0.0;
     final date = sale!['date'] ?? '';
-    final formatter = NumberFormat.currency(locale: 'fr_FR', symbol: ' 24');
+    final formatter = NumberFormat.currency(locale: 'fr_FR', symbol: '\$');
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Card(

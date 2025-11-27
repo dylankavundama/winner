@@ -111,11 +111,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <textarea name="description" class="form-control"><?= htmlspecialchars($product['description']) ?></textarea>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Prix (€)</label>
+                            <label class="form-label">Prix ($)</label>
                             <input type="number" name="price" step="0.01" min="0" class="form-control" value="<?= $product['price'] ?>" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Prix de vente (€)</label>
+                            <label class="form-label">Prix de vente ($)</label>
                             <input type="number" name="prix_vente" step="0.01" min="0" class="form-control" value="<?= $product['prix_vente'] ?>" required>
                         </div>
                         <div class="mb-3">

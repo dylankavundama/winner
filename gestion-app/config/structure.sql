@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS invoices (
     sale_id INT,
     invoice_date DATETIME DEFAULT CURRENT_TIMESTAMP,
     amount DECIMAL(10,2) NOT NULL,
-    status ENUM('payée', 'impayée') DEFAULT 'impayée',
+    status ENUM('payée', 'impayée') DEFAULT 'payée',
     FOREIGN KEY (sale_id) REFERENCES sales(id)
 );
 

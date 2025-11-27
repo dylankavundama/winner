@@ -176,9 +176,37 @@ class _ReportPageState extends State<ReportPage>
   Widget _buildSalesTable() {
     return Card(
       child: sales.isEmpty
-          ? const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Aucune vente trouvée.'),
+          ? Padding(
+              padding: const EdgeInsets.all(32),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.shopping_cart_outlined,
+                      size: 64,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Aucune vente trouvée',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Aucune vente pour la période sélectionnée',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             )
           : SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -205,9 +233,37 @@ class _ReportPageState extends State<ReportPage>
   Widget _buildLowStockTable() {
     return Card(
       child: lowStock.isEmpty
-          ? const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Aucun produit en stock faible.'),
+          ? Padding(
+              padding: const EdgeInsets.all(32),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.check_circle_outline,
+                      size: 64,
+                      color: Colors.green[300],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Aucun produit en stock faible',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Tous les produits ont un stock suffisant',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             )
           : SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -234,9 +290,37 @@ class _ReportPageState extends State<ReportPage>
   Widget _buildTopClientsTable() {
     return Card(
       child: topClients.isEmpty
-          ? const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Aucun client trouvé.'),
+          ? Padding(
+              padding: const EdgeInsets.all(32),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.people_outline,
+                      size: 64,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Aucun client trouvé',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Aucun client pour la période sélectionnée',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             )
           : SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -259,9 +343,37 @@ class _ReportPageState extends State<ReportPage>
   Widget _buildUnpaidTable() {
     return Card(
       child: unpaid.isEmpty
-          ? const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Aucune facture impayée.'),
+          ? Padding(
+              padding: const EdgeInsets.all(32),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.check_circle_outline,
+                      size: 64,
+                      color: Colors.green[300],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Aucune facture impayée',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Toutes les factures sont payées',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             )
           : SingleChildScrollView(
               scrollDirection: Axis.horizontal,

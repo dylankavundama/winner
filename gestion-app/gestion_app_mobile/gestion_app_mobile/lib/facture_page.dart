@@ -97,7 +97,7 @@ class _FacturePageState extends State<FacturePage> {
     final status = invoice!['status'] ?? 'Non payée';
     final imei = invoice!['imei'] ?? '';
     final garanti = invoice!['garanti'] ?? '';
-    final formatter = NumberFormat.currency(locale: 'fr_FR', symbol: ' \$');
+    final formatter = NumberFormat.currency(locale: 'fr_FR', symbol: '\$');
 
     return Center(
       child: SingleChildScrollView(

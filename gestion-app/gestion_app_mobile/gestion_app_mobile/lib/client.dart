@@ -77,20 +77,50 @@ class _ClientPageState extends State<ClientPage> {
           ? const Center(child: CircularProgressIndicator())
           : errorMessage != null
               ? Center(child: Text(errorMessage!))
-              : ListView.separated(
-                  itemCount: clients.length,
-                  separatorBuilder: (context, index) =>
-                      const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final client = clients[index];
-                    return ListTile(
-                      leading: const Icon(Icons.person),
-                      title: Text(client['name'] ?? 'Nom inconnu'),
-                      subtitle: Text(client['email'] ?? ''),
-                      trailing: Text(client['phone'] ?? ''),
-                    );
-                  },
-                ),
+              : clients.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.people_outline,
+                            size: 64,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Aucun client enregistré',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Les clients ajoutés apparaîtront ici',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.separated(
+                      itemCount: clients.length,
+                      separatorBuilder: (context, index) =>
+                          const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final client = clients[index];
+                        return ListTile(
+                          leading: const Icon(Icons.person),
+                          title: Text(client['name'] ?? 'Nom inconnu'),
+                          subtitle: Text(client['email'] ?? ''),
+                          trailing: Text(client['phone'] ?? ''),
+                        );
+                      },
+                    ),
  
     );
   }
