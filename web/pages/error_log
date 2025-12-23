@@ -1,0 +1,25 @@
+[06-Jul-2025 08:48:42 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/winnerco/public_html/pages/add_sale.php on line 2
+[06-Jul-2025 08:48:42 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/winnerco/public_html/pages/add_sale.php:1) in /home/winnerco/public_html/pages/add_sale.php on line 4
+[06-Jul-2025 08:48:49 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/winnerco/public_html/pages/add_sale.php on line 2
+[06-Jul-2025 08:48:49 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/winnerco/public_html/pages/add_sale.php:1) in /home/winnerco/public_html/pages/add_sale.php on line 4
+[06-Jul-2025 08:48:56 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/winnerco/public_html/pages/add_sale.php on line 2
+[06-Jul-2025 08:48:56 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/winnerco/public_html/pages/add_sale.php:1) in /home/winnerco/public_html/pages/add_sale.php on line 4
+[06-Jul-2025 09:09:09 UTC] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1451 Cannot delete or update a parent row: a foreign key constraint fails (`winnerco_db`.`sale_details`, CONSTRAINT `fk_sale_details_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`)) in /home/winnerco/public_html/pages/delete_product.php:24
+Stack trace:
+#0 /home/winnerco/public_html/pages/delete_product.php(24): PDOStatement->execute(Array)
+#1 {main}
+  thrown in /home/winnerco/public_html/pages/delete_product.php on line 24
+[06-Jul-2025 09:09:42 UTC] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1451 Cannot delete or update a parent row: a foreign key constraint fails (`winnerco_db`.`sale_details`, CONSTRAINT `fk_sale_details_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`)) in /home/winnerco/public_html/pages/delete_product.php:24
+Stack trace:
+#0 /home/winnerco/public_html/pages/delete_product.php(24): PDOStatement->execute(Array)
+#1 {main}
+  thrown in /home/winnerco/public_html/pages/delete_product.php on line 24
+[03-Sep-2025 13:04:56 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/winnerco/public_html/pages/view_invoice.php on line 344
+[03-Sep-2025 13:05:28 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/winnerco/public_html/pages/view_invoice.php on line 344
+[03-Sep-2025 13:27:39 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/winnerco/public_html/pages/view_invoice.php on line 344
+[03-Sep-2025 13:27:39 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/winnerco/public_html/pages/view_invoice.php on line 344
+[03-Sep-2025 13:27:41 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/winnerco/public_html/pages/view_invoice.php on line 344
+[10-Sep-2025 08:14:39 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/winnerco/public_html/pages/view_invoice.php on line 344
+[10-Sep-2025 08:15:14 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/winnerco/public_html/pages/view_invoice.php on line 344
+[10-Sep-2025 08:19:12 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/winnerco/public_html/pages/view_invoice.php on line 344
+[10-Sep-2025 08:21:00 UTC] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in /home/winnerco/public_html/pages/view_invoice.php on line 344

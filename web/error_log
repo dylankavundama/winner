@@ -1,0 +1,70 @@
+[01-Jul-2025 10:55:37 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/winnerco/public_html/login.php on line 2
+[01-Jul-2025 11:12:48 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/winnerco/public_html/login.php on line 2
+[01-Jul-2025 14:22:44 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/winnerco/public_html/login.php on line 2
+[01-Jul-2025 14:22:46 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/winnerco/public_html/login.php on line 2
+[01-Jul-2025 14:55:32 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/winnerco/public_html/login.php on line 2
+[01-Jul-2025 16:35:26 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/winnerco/public_html/login.php on line 2
+[01-Jul-2025 16:47:45 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/winnerco/public_html/login.php on line 2
+[01-Jul-2025 16:48:32 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/winnerco/public_html/login.php on line 2
+[01-Jul-2025 16:48:32 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/winnerco/public_html/login.php:1) in /home/winnerco/public_html/login.php on line 28
+[01-Jul-2025 16:48:37 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/winnerco/public_html/login.php on line 2
+[01-Jul-2025 16:48:37 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/winnerco/public_html/login.php:1) in /home/winnerco/public_html/login.php on line 28
+[01-Jul-2025 16:48:45 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/winnerco/public_html/login.php on line 2
+[01-Jul-2025 16:49:05 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/winnerco/public_html/login.php on line 2
+[01-Jul-2025 16:49:05 UTC] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/winnerco/public_html/login.php:1) in /home/winnerco/public_html/login.php on line 28
+[01-Jul-2025 16:49:09 UTC] PHP Warning:  session_start(): Session cannot be started after headers have already been sent in /home/winnerco/public_html/login.php on line 2
+[10-Jul-2025 07:53:52 UTC] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [1044] Access denied for user 'winnerco_admin'@'localhost' to database 'winnerco_db' in /home/winnerco/public_html/config/db.php:19
+Stack trace:
+#0 /home/winnerco/public_html/login.php(3): require_once()
+#1 {main}
+  thrown in /home/winnerco/public_html/config/db.php on line 19
+[10-Jul-2025 07:53:59 UTC] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [1044] Access denied for user 'winnerco_admin'@'localhost' to database 'winnerco_db' in /home/winnerco/public_html/config/db.php:19
+Stack trace:
+#0 /home/winnerco/public_html/login.php(3): require_once()
+#1 {main}
+  thrown in /home/winnerco/public_html/config/db.php on line 19
+[10-Jul-2025 07:54:11 UTC] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [1044] Access denied for user 'winnerco_admin'@'localhost' to database 'winnerco_db' in /home/winnerco/public_html/config/db.php:19
+Stack trace:
+#0 /home/winnerco/public_html/login.php(3): require_once()
+#1 {main}
+  thrown in /home/winnerco/public_html/config/db.php on line 19
+[10-Jul-2025 07:54:17 UTC] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [1044] Access denied for user 'winnerco_admin'@'localhost' to database 'winnerco_db' in /home/winnerco/public_html/config/db.php:19
+Stack trace:
+#0 /home/winnerco/public_html/login.php(3): require_once()
+#1 {main}
+  thrown in /home/winnerco/public_html/config/db.php on line 19
+[10-Jul-2025 07:54:20 UTC] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [1044] Access denied for user 'winnerco_admin'@'localhost' to database 'winnerco_db' in /home/winnerco/public_html/config/db.php:19
+Stack trace:
+#0 /home/winnerco/public_html/login.php(3): require_once()
+#1 {main}
+  thrown in /home/winnerco/public_html/config/db.php on line 19
+[10-Jul-2025 07:56:44 UTC] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [1044] Access denied for user 'winnerco_admin'@'localhost' to database 'winnerco_db' in /home/winnerco/public_html/config/db.php:19
+Stack trace:
+#0 /home/winnerco/public_html/login.php(3): require_once()
+#1 {main}
+  thrown in /home/winnerco/public_html/config/db.php on line 19
+[10-Jul-2025 07:56:45 UTC] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [1044] Access denied for user 'winnerco_admin'@'localhost' to database 'winnerco_db' in /home/winnerco/public_html/config/db.php:19
+Stack trace:
+#0 /home/winnerco/public_html/login.php(3): require_once()
+#1 {main}
+  thrown in /home/winnerco/public_html/config/db.php on line 19
+[10-Jul-2025 07:56:47 UTC] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [1044] Access denied for user 'winnerco_admin'@'localhost' to database 'winnerco_db' in /home/winnerco/public_html/config/db.php:19
+Stack trace:
+#0 /home/winnerco/public_html/login.php(3): require_once()
+#1 {main}
+  thrown in /home/winnerco/public_html/config/db.php on line 19
+[10-Jul-2025 07:57:35 UTC] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [1044] Access denied for user 'winnerco_admin'@'localhost' to database 'winnerco_db' in /home/winnerco/public_html/config/db.php:19
+Stack trace:
+#0 /home/winnerco/public_html/login.php(3): require_once()
+#1 {main}
+  thrown in /home/winnerco/public_html/config/db.php on line 19
+[10-Jul-2025 07:57:36 UTC] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [1044] Access denied for user 'winnerco_admin'@'localhost' to database 'winnerco_db' in /home/winnerco/public_html/config/db.php:19
+Stack trace:
+#0 /home/winnerco/public_html/login.php(3): require_once()
+#1 {main}
+  thrown in /home/winnerco/public_html/config/db.php on line 19
+[10-Jul-2025 07:57:47 UTC] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [1044] Access denied for user 'winnerco_admin'@'localhost' to database 'winnerco_db' in /home/winnerco/public_html/config/db.php:19
+Stack trace:
+#0 /home/winnerco/public_html/login.php(3): require_once()
+#1 {main}
+  thrown in /home/winnerco/public_html/config/db.php on line 19

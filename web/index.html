@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="0; URL=https://winnercompany.net/login.php">
+    <title>Redirection...</title>
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        OneSignalDeferred.push(async function (OneSignal) {
+            await OneSignal.init({
+                appId: "806afdd0-9ba7-46ae-947c-8322ef88bb1b",
+            });
+        });
+    </script>
+    <style>
+        body {
+            display: flex; /* Enables Flexbox for layout */
+            flex-direction: column; /* Stacks children vertically */
+            justify-content: center; /* Centers content vertically */
+            align-items: center; /* Centers content horizontally */
+            min-height: 100vh; /* Ensures the body takes at least the full viewport height */
+            margin: 0; /* Removes default body margin */
+            font-family: Arial, sans-serif; /* Applies font to the whole body */
+        }
+
+        .centered-image {
+            max-width: 50%; /* Ensures image is responsive */
+            height: auto; /* Maintains aspect ratio */
+            display: block; /* Removes extra space below the image if it's inline */
+            margin-bottom: 20px; /* Adds some space below the image */
+        }
+
+        .loading-text {
+            text-align: center; /* Centers the text within its own container */
+            margin-top: 0; /* Adjusts as Flexbox handles vertical spacing */
+        }
+    </style>
+</head>
+
+<body>
+    <img src="assets/logo.png" class="centered-image" alt="Winner Company Logo">
+    <p class="loading-text">Chargement en cours...</p>
+</body>
+
+</html>
