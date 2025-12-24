@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gestion_app_mobile/constants.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'app_localizations.dart';
+import 'language_selection_page.dart';
 import 'package:gestion_app_mobile/dashboard.dart';
 import 'package:gestion_app_mobile/user_model.dart';
 import 'package:http/http.dart' as http;
@@ -14,14 +17,68 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  MyAppState createState() => MyAppState();
+}
+
+class MyAppState extends State<MyApp> {
+  Locale _locale = const Locale('fr');
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferredLanguage();
+  }
+
+  Future<void> _loadPreferredLanguage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final langCode = prefs.getString('app_language');
+    if (langCode != null) {
+      setState(() {
+        _locale = Locale(langCode);
+        _initialized = true;
+      });
+    } else {
+      // Pas encore de langue choisie : afficher l'écran de sélection
+      setState(() {
+        _initialized = true;
+      });
+    }
+  }
+
+  void setLocale(Locale locale) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('app_language', locale.languageCode);
+    setState(() {
+      _locale = locale;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (!_initialized) {
+      return const MaterialApp(
+        home: Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Gestion App',
+      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
+      locale: _locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizationsDelegate(),
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       theme: ThemeData(
         primarySwatch: Colors.blue,
         appBarTheme: const AppBarTheme(
@@ -49,17 +106,25 @@ class MyApp extends StatelessWidget {
         ),
       ),
       home: FutureBuilder<Map<String, String?>>(
-        future: _checkLoginStatus(),
+        future: _checkStartupFlow(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             );
-          } else if (snapshot.hasData &&
-              snapshot.data!['phpSessionCookie'] != null) {
-            final username =
-                snapshot.data!['loggedInUsername'] ?? 'Utilisateur';
-            final userRole = snapshot.data!['user_role'] ?? 'vendeur';
+          }
+
+          final data = snapshot.data ?? {};
+          final needsLanguageSelection =
+              data['needsLanguageSelection'] == 'true';
+
+          if (needsLanguageSelection) {
+            return const LanguageSelectionPage();
+          }
+
+          if (data['phpSessionCookie'] != null) {
+            final username = data['loggedInUsername'] ?? 'Utilisateur';
+            final userRole = data['user_role'] ?? 'vendeur';
 
             if (userRole == 'vendeur' || userRole == 'magasinier') {
               return DashboardPageVendeur(loggedInUsername: username);
@@ -77,16 +142,21 @@ class MyApp extends StatelessWidget {
     );
   }
 
-  static Future<Map<String, String?>> _checkLoginStatus() async {
+  static Future<Map<String, String?>> _checkStartupFlow() async {
     final prefs = await SharedPreferences.getInstance();
     final phpSessionCookie = prefs.getString('phpSessionCookie');
     final loggedInUsername = prefs.getString('loggedInUsername');
     final userRole = prefs.getString('user_role');
+    final appLanguage = prefs.getString('app_language');
+
+    final needsLanguageSelection =
+        appLanguage == null || appLanguage.isEmpty ? 'true' : 'false';
 
     return {
       'phpSessionCookie': phpSessionCookie,
       'loggedInUsername': loggedInUsername,
       'user_role': userRole,
+      'needsLanguageSelection': needsLanguageSelection,
     };
   }
 }
@@ -125,8 +195,7 @@ class _LoginPageState extends State<LoginPage> {
 
     if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
       setState(() {
-        _error =
-            "Veuillez sélectionner un nom d'utilisateur et entrer un mot de passe.";
+        _error = AppLocalizations.of(context).loginErrorEmpty;
       });
       return;
     }
@@ -213,6 +282,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: Colors.white,
       body: Padding(
@@ -232,7 +302,7 @@ class _LoginPageState extends State<LoginPage> {
                   Image.asset('assets/logo.png', height: 170, width: 300),
                   const SizedBox(height: 30),
                   Text(
-                    'Connectez-vous à votre compte',
+                  loc.loginTitle,
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -252,9 +322,9 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   TextFormField(
                     controller: _usernameController,
-                    decoration: const InputDecoration(
-                      labelText: "Nom d'utilisateur",
-                      prefixIcon: Icon(Icons.person),
+                    decoration: InputDecoration(
+                      labelText: loc.loginUsername,
+                      prefixIcon: const Icon(Icons.person),
                     ),
                     validator: (val) => val == null || val.isEmpty
                         ? 'Veuillez entrer votre nom d\'utilisateur'
@@ -266,7 +336,7 @@ class _LoginPageState extends State<LoginPage> {
                     keyboardType: TextInputType.text,
                     controller: _passwordController,
                     decoration: InputDecoration(
-                      labelText: 'Mot de passe',
+                      labelText: loc.loginPassword,
                       prefixIcon: const Icon(Icons.lock),
                       suffixIcon: IconButton(
                         // <-- Ajoutez ce widget
@@ -296,7 +366,7 @@ class _LoginPageState extends State<LoginPage> {
                       ? const CircularProgressIndicator()
                       : ElevatedButton(
                           onPressed: _login,
-                          child: const Text('Se connecter'),
+                          child: Text(loc.loginButton),
                         ),
                 ],
               ),

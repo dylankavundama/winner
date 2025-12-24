@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:gestion_app_mobile/constants.dart';
+import 'package:gestion_app_mobile/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:gestion_app_mobile/detail_sale_page.dart';
 
@@ -57,20 +58,23 @@ class _SaleListPageState extends State<SaleListPage> {
             isLoading = false;
           });
         } else {
+          final loc = AppLocalizations.of(context);
           setState(() {
-            errorMessage = data['message'] ?? 'Erreur lors du chargement des ventes';
+            errorMessage = data['message'] ?? loc.saleListLoadError;
             isLoading = false;
           });
         }
       } else {
+        final loc = AppLocalizations.of(context);
         setState(() {
-          errorMessage = 'Erreur serveur (${response.statusCode})';
+          errorMessage = loc.saleListServerError(response.statusCode);
           isLoading = false;
         });
       }
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       setState(() {
-        errorMessage = 'Erreur de connexion: $e';
+        errorMessage = loc.saleListConnectionError(e.toString());
         isLoading = false;
       });
     }
@@ -97,23 +101,25 @@ class _SaleListPageState extends State<SaleListPage> {
     return sorted;
   }
 
-  Map<String, List<Sale>> get groupedByMonth {
+  Map<String, List<Sale>> groupedByMonth(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final Map<String, List<Sale>> map = {};
+    final locale = loc.locale.languageCode == 'fr' ? 'fr_FR' : 'en_US';
     for (var sale in sales) {
       final date = DateTime.tryParse(sale.date);
       if (date != null) {
-        final key = DateFormat('MMMM yyyy', 'fr_FR').format(date);
+        final key = DateFormat('MMMM yyyy', locale).format(date);
         map.putIfAbsent(key, () => []).add(sale);
       } else {
-        map.putIfAbsent('Inconnue', () => []).add(sale);
+        map.putIfAbsent(loc.saleListUnknown, () => []).add(sale);
       }
     }
     // Trie les mois par date décroissante
     final sortedKeys = map.keys.toList()
       ..sort((a, b) {
         try {
-          final da = DateFormat('MMMM yyyy', 'fr_FR').parse(a);
-          final db = DateFormat('MMMM yyyy', 'fr_FR').parse(b);
+          final da = DateFormat('MMMM yyyy', locale).parse(a);
+          final db = DateFormat('MMMM yyyy', locale).parse(b);
           return db.compareTo(da);
         } catch (_) {
           return 0;
@@ -122,11 +128,12 @@ class _SaleListPageState extends State<SaleListPage> {
     return {for (var k in sortedKeys) k: map[k]!};
   }
 
-  Map<String, List<Sale>> get groupedByYear {
+  Map<String, List<Sale>> groupedByYear(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final Map<String, List<Sale>> map = {};
     for (var sale in sales) {
       final date = DateTime.tryParse(sale.date);
-      final key = date != null ? date.year.toString() : 'Inconnue';
+      final key = date != null ? date.year.toString() : loc.saleListUnknown;
       map.putIfAbsent(key, () => []).add(sale);
     }
     // Trie les années par ordre décroissant
@@ -137,18 +144,19 @@ class _SaleListPageState extends State<SaleListPage> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Liste des Ventes'),
+        title: Text(loc.saleListTitle),
         backgroundColor: Colors.blueGrey[800],
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.sort),
             onSelected: _setSortMode,
             itemBuilder: (context) => [
-              const PopupMenuItem(value: 'date', child: Text('Trier par date')),
-              const PopupMenuItem(value: 'mois', child: Text('Trier par mois')),
-              const PopupMenuItem(value: 'annee', child: Text('Trier par année')),
+              PopupMenuItem(value: 'date', child: Text(loc.saleListSortByDate)),
+              PopupMenuItem(value: 'mois', child: Text(loc.saleListSortByMonth)),
+              PopupMenuItem(value: 'annee', child: Text(loc.saleListSortByYear)),
             ],
           ),
         ],
@@ -169,7 +177,7 @@ class _SaleListPageState extends State<SaleListPage> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'Aucune vente trouvée',
+                            loc.saleListNoSales,
                             style: TextStyle(
                               fontSize: 18,
                               color: Colors.grey[600],
@@ -178,7 +186,7 @@ class _SaleListPageState extends State<SaleListPage> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Les ventes enregistrées apparaîtront ici',
+                            loc.saleListEmptyHint,
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[500],
@@ -200,9 +208,9 @@ class _SaleListPageState extends State<SaleListPage> {
                                     child: Text(sale.id.toString()),
                                     backgroundColor: Colors.blueGrey[100],
                                   ),
-                                  title: Text('Client : ${sale.clientName}'),
-                                  subtitle: Text('Date : ${sale.date}'),
-                                  trailing: Text(' 24${sale.total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  title: Text(loc.saleListClientLabel(sale.clientName)),
+                                  subtitle: Text(loc.saleListDateLabel(sale.date)),
+                                  trailing: Text('${sale.total.toStringAsFixed(2)} \$', style: const TextStyle(fontWeight: FontWeight.bold)),
                                   onTap: () {
                                     Navigator.push(
                                       context,
@@ -216,7 +224,7 @@ class _SaleListPageState extends State<SaleListPage> {
                             )
                           : ListView(
                               children: [
-                                for (final entry in (sortMode == 'mois' ? groupedByMonth.entries : groupedByYear.entries)) ...[
+                                for (final entry in (sortMode == 'mois' ? groupedByMonth(context).entries : groupedByYear(context).entries)) ...[
                                   Padding(
                                     padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
                                     child: Text(
@@ -229,9 +237,9 @@ class _SaleListPageState extends State<SaleListPage> {
                                           child: Text(sale.id.toString()),
                                           backgroundColor: Colors.blueGrey[100],
                                         ),
-                                        title: Text('Client : ${sale.clientName}'),
-                                        subtitle: Text('Date : ${sale.date}'),
-                                        trailing: Text(' 24${sale.total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                        title: Text(loc.saleListClientLabel(sale.clientName)),
+                                        subtitle: Text(loc.saleListDateLabel(sale.date)),
+                                        trailing: Text('${sale.total.toStringAsFixed(2)} \$', style: const TextStyle(fontWeight: FontWeight.bold)),
                                         onTap: () {
                                           Navigator.push(
                                             context,

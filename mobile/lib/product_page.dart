@@ -3,8 +3,9 @@ import 'package:gestion_app_mobile/add.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:gestion_app_mobile/constants.dart'; // Assuming this file defines ApiConstants
-import 'package:gestion_app_mobile/main.dart'; // Assuming this file defines LoginPage
+import 'package:gestion_app_mobile/constants.dart';
+import 'package:gestion_app_mobile/main.dart';
+import 'package:gestion_app_mobile/app_localizations.dart';
 
 // --- Product Model ---
 class Product {
@@ -81,8 +82,9 @@ class _ProductPageState extends State<ProductPage> {
     _phpSessionCookie = prefs.getString('phpSessionCookie');
 
     if (_phpSessionCookie == null || _phpSessionCookie!.isEmpty) {
+      final loc = AppLocalizations.of(context);
       setState(() {
-        errorMessage = "Session non trouvée. Veuillez vous reconnecter.";
+        errorMessage = loc.productSessionNotFound;
         isLoading = false;
       });
       _navigateToLogin(); // Redirect to login if no session
@@ -136,31 +138,33 @@ class _ProductPageState extends State<ProductPage> {
           isLoading = false;
         });
       } else {
+        final loc = AppLocalizations.of(context);
         setState(() {
           errorMessage =
-              data['message'] ?? 'Erreur lors du chargement des produits.';
+              data['message'] ?? loc.productLoadError;
           isLoading = false;
         });
       }
     } else if (response.statusCode == 401) {
       // Unauthorized - session likely expired
+      final loc = AppLocalizations.of(context);
       setState(() {
-        errorMessage =
-            "Non autorisé. Session expirée ou invalide. Veuillez vous reconnecter.";
+        errorMessage = loc.productUnauthorized;
         isLoading = false;
       });
       _navigateToLogin(); // Redirect to login
     } else {
+      final loc = AppLocalizations.of(context);
       setState(() {
-        errorMessage =
-            "Échec du chargement des produits: HTTP ${response.statusCode}";
+        errorMessage = loc.productHttpError(response.statusCode);
         isLoading = false;
       });
     }
   } catch (e) {
     // Catch network errors or other exceptions
+    final loc = AppLocalizations.of(context);
     setState(() {
-      errorMessage = "Erreur de connexion au serveur: $e";
+      errorMessage = loc.productConnectionError(e.toString());
       isLoading = false;
     });
     print('Error fetching products: $e'); // For debugging
@@ -201,14 +205,16 @@ class _ProductPageState extends State<ProductPage> {
   }
 
   // Determines stock status text based on quantity
-  String _getStockStatus(int quantity) {
-    if (quantity <= 0) return 'Rupture de stock';
-    if (quantity <= 10) return 'Stock faible';
-    return 'En stock';
+  String _getStockStatus(int quantity, BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    if (quantity <= 0) return loc.productStockOut;
+    if (quantity <= 10) return loc.productStockLow;
+    return loc.productStockAvailable;
   }
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       floatingActionButton: userRole != 'vendeur'
           ? FloatingActionButton(
@@ -225,15 +231,15 @@ class _ProductPageState extends State<ProductPage> {
                 }
               },
               backgroundColor: Colors.green,
-              tooltip: 'Ajouter un nouveau produit',
+              tooltip: loc.productAddTooltip,
               child: const Icon(Icons.add, color: Colors.white),
             )
           : null, // Masque le bouton si le rôle est 'vendeur'
 
       appBar: AppBar(
-        title: const Text(
-          'Produits et Stock',
-          style: TextStyle(
+        title: Text(
+          loc.productTitle,
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 22,
             color: Colors.white,
@@ -245,7 +251,7 @@ class _ProductPageState extends State<ProductPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: 'Actualiser la liste des produits',
+            tooltip: loc.productRefreshTooltip,
             onPressed: _fetchProducts, // Call fetch function to refresh
           ),
         ],
@@ -274,7 +280,7 @@ class _ProductPageState extends State<ProductPage> {
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: _fetchProducts, // Retry button
-                          child: const Text('Réessayer'),
+                          child: Text(loc.productRetryButton),
                         ),
                       ],
                     ),
@@ -292,8 +298,7 @@ class _ProductPageState extends State<ProductPage> {
                           });
                         },
                         decoration: InputDecoration(
-                          hintText:
-                              'Rechercher un produit par nom ou description...',
+                          hintText: loc.productSearchHint,
                           prefixIcon: const Icon(Icons.search),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -310,7 +315,7 @@ class _ProductPageState extends State<ProductPage> {
                         children: [
                           Expanded(
                             child: _buildStatCard(
-                              'Total Produits',
+                              loc.productTotalProducts,
                               products.length.toString(),
                               Icons.inventory_2_outlined,
                               Colors.blue,
@@ -319,7 +324,7 @@ class _ProductPageState extends State<ProductPage> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _buildStatCard(
-                              'En Stock',
+                              loc.productInStock,
                               products
                                   .where((p) => p.quantity > 0)
                                   .length
@@ -331,7 +336,7 @@ class _ProductPageState extends State<ProductPage> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: _buildStatCard(
-                              'Rupture',
+                              loc.productOutOfStock,
                               products
                                   .where((p) => p.quantity <= 0)
                                   .length
@@ -359,8 +364,8 @@ class _ProductPageState extends State<ProductPage> {
                                   const SizedBox(height: 16),
                                   Text(
                                     searchQuery.isEmpty
-                                        ? 'Aucun produit trouvé'
-                                        : 'Aucun produit correspond à votre recherche',
+                                        ? loc.productNoProducts
+                                        : loc.productNoSearchResults,
                                     style: TextStyle(
                                       fontSize: 18,
                                       color: Colors.grey[600],
@@ -420,6 +425,7 @@ class _ProductPageState extends State<ProductPage> {
 
   // Widget for displaying a single product card
   Widget _buildProductCard(Product product) {
+    final loc = AppLocalizations.of(context);
     return Card(
       margin: const EdgeInsets.only(bottom: 12.0),
       elevation: 3,
@@ -466,7 +472,7 @@ class _ProductPageState extends State<ProductPage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    _getStockStatus(product.quantity),
+                    _getStockStatus(product.quantity, context),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -478,7 +484,7 @@ class _ProductPageState extends State<ProductPage> {
                 if (userRole != 'vendeur')
                   IconButton(
                     icon: const Icon(Icons.edit, color: Colors.blueAccent),
-                    tooltip: 'Modifier ce produit',
+                    tooltip: loc.productEditTooltip,
                     onPressed: () {
                       _showEditProductDialog(product);
                     },
@@ -494,7 +500,7 @@ class _ProductPageState extends State<ProductPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Prix d\'achat:',
+                      loc.productPurchasePrice,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
@@ -514,7 +520,7 @@ class _ProductPageState extends State<ProductPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Prix de vente:',
+                      loc.productSalePrice,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
@@ -534,7 +540,7 @@ class _ProductPageState extends State<ProductPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Quantité:',
+                      loc.productQuantityLabel,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey[600],
@@ -564,7 +570,7 @@ class _ProductPageState extends State<ProductPage> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Ajouté le: ${product.createdAt}',
+              loc.productAddedOn(product.createdAt),
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey[500],
@@ -589,36 +595,37 @@ class _ProductPageState extends State<ProductPage> {
     showDialog(
       context: context,
       builder: (context) {
+        final loc = AppLocalizations.of(context);
         return AlertDialog(
-          title: const Text('Modifier le produit'),
+          title: Text(loc.productEditDialogTitle),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Nom : ${product.name}',
+                Text(loc.productEditName(product.name),
                     style: const TextStyle(fontWeight: FontWeight.bold)),
                 if (product.description.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
-                    child: Text('Description : ${product.description}',
+                    child: Text(loc.productEditDescription(product.description),
                         style: const TextStyle(color: Colors.grey)),
                   ),
-                SizedBox(height: 15),
+                const SizedBox(height: 15),
                 TextField(
                   controller: priceController,
-                  decoration: const InputDecoration(labelText: 'Prix d\'achat'),
+                  decoration: InputDecoration(labelText: loc.productEditPurchasePrice),
                   keyboardType: TextInputType.numberWithOptions(decimal: true),
                 ),
-                SizedBox(height: 15),
+                const SizedBox(height: 15),
                 TextField(
                   controller: prixVenteController,
-                  decoration: const InputDecoration(labelText: 'Prix de vente'),
+                  decoration: InputDecoration(labelText: loc.productEditSalePrice),
                   keyboardType: TextInputType.numberWithOptions(decimal: true),
                 ),
-                SizedBox(height: 15),
+                const SizedBox(height: 15),
                 TextField(
                   controller: quantityController,
-                  decoration: const InputDecoration(labelText: 'Quantité'),
+                  decoration: InputDecoration(labelText: loc.productEditQuantity),
                   keyboardType: TextInputType.number,
                 ),
               ],
@@ -627,7 +634,7 @@ class _ProductPageState extends State<ProductPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Annuler'),
+              child: Text(loc.productEditCancel),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -653,22 +660,23 @@ class _ProductPageState extends State<ProductPage> {
                     }
                   });
                   Navigator.of(context).pop();
+                  final loc = AppLocalizations.of(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Produit modifié avec succès'),
+                    SnackBar(
+                        content: Text(loc.productUpdateSuccess),
                         backgroundColor: Colors.green),
                   );
                 } else {
                   Navigator.of(context).pop();
+                  final loc = AppLocalizations.of(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content: Text(
-                            'Erreur lors de la modification du produit :\n${result['message'] ?? 'Erreur inconnue'}'),
+                        content: Text(loc.productUpdateError(result['message'] ?? '')),
                         backgroundColor: Colors.red),
                   );
                 }
               },
-              child: const Text('Enregistrer'),
+              child: Text(loc.productEditSave),
             ),
           ],
         );
@@ -707,7 +715,8 @@ class _ProductPageState extends State<ProductPage> {
         final data = json.decode(response.body);
         return {'success': data['success'] == true, 'message': data['message']};
       } else {
-        String errorMessage = 'Erreur HTTP: ${response.statusCode}';
+        final loc = AppLocalizations.of(context);
+        String errorMessage = loc.productUpdateHttpError(response.statusCode);
         // Try to parse a more specific error message from the response body
         try {
           final errorData = json.decode(response.body);
@@ -725,9 +734,10 @@ class _ProductPageState extends State<ProductPage> {
     } catch (e) {
       // Catch network-related exceptions (e.g., no internet, host unreachable)
       print('Network or other exception during product update: $e');
+      final loc = AppLocalizations.of(context);
       return {
         'success': false,
-        'message': 'Échec de la connexion au serveur: $e'
+        'message': loc.productUpdateConnectionError(e.toString())
       };
     }
   }

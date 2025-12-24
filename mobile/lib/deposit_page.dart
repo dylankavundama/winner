@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show ByteData, rootBundle;
 import 'package:gestion_app_mobile/client_model.dart';
 import 'package:gestion_app_mobile/constants.dart';
 import 'package:gestion_app_mobile/product_model.dart';
@@ -8,6 +10,9 @@ import 'package:gestion_app_mobile/product_page.dart' as product_page;
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:sunmi_printer_plus/enums.dart';
+import 'package:sunmi_printer_plus/sunmi_printer_plus.dart';
+import 'package:gestion_app_mobile/app_localizations.dart';
 
 class DepositPage extends StatefulWidget {
   final Client? initialClient;
@@ -40,6 +45,18 @@ class _DepositPageState extends State<DepositPage> {
       NumberFormat.currency(locale: 'fr_FR', symbol: '\$', decimalDigits: 2);
   final TextEditingController _clientSearchController =
       TextEditingController();
+
+  double get _remainingToPay {
+    if (_selectedProduct == null) return 0.0;
+    return _selectedProduct!.prixVente - _historyTotal;
+  }
+
+  double get _clientCredit {
+    // Crédit = solde dépôt - prix de vente si supérieur à 0
+    if (_selectedProduct == null) return 0.0;
+    final credit = _historyTotal - _selectedProduct!.prixVente;
+    return credit > 0 ? credit : 0.0;
+  }
 
   @override
   void initState() {
@@ -140,8 +157,10 @@ class _DepositPageState extends State<DepositPage> {
             _history = items
                 .map((e) => Map<String, dynamic>.from(e as Map))
                 .toList();
-            _historyTotal =
-                (data['total_amount'] as num?)?.toDouble() ?? 0.0;
+            final dynamic totalRaw = data['total_amount'];
+            _historyTotal = totalRaw is num
+                ? totalRaw.toDouble()
+                : double.tryParse('$totalRaw') ?? 0.0;
           });
         }
       }
@@ -172,9 +191,10 @@ class _DepositPageState extends State<DepositPage> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    final loc = AppLocalizations.of(context);
     if (_selectedClient == null || _selectedProduct == null) {
       _showSnackBar(
-        'Veuillez sélectionner un client et un produit.',
+        loc.depositSelectClientProduct,
         isError: true,
       );
       return;
@@ -186,7 +206,7 @@ class _DepositPageState extends State<DepositPage> {
         0;
     if (amount <= 0) {
       _showSnackBar(
-        'Le montant doit être supérieur à 0.',
+        loc.depositAmountPositive,
         isError: true,
       );
       return;
@@ -210,22 +230,48 @@ class _DepositPageState extends State<DepositPage> {
       );
 
       final data = jsonDecode(response.body);
+      final loc = AppLocalizations.of(context);
       if (response.statusCode == 200 && data['success'] == true) {
-        _showSnackBar('Dépôt enregistré avec succès.');
+        _showSnackBar(loc.depositSuccess);
+
+        // Récupérer quelques infos utiles pour le reçu
+        final int? depositId = data['deposit_id'] is int
+            ? data['deposit_id'] as int
+            : int.tryParse('${data['deposit_id'] ?? ''}');
+        final bool stockReserved =
+            (data['stock_reserved'] == true) || (data['stock_reserved'] == 1);
+
+        // Imprimer le reçu (preuve de paiement)
+        try {
+          await _printDepositReceipt(
+            depositId: depositId,
+            client: _selectedClient!,
+            product: _selectedProduct!,
+            amount: amount,
+            date: _selectedDate,
+            stockReserved: stockReserved,
+          );
+        } catch (_) {
+          // On ne bloque pas l'utilisateur si l'impression échoue
+        }
+
         setState(() {
           _amountController.clear();
         });
         // Recharger l'historique pour ce client/produit
         await _fetchHistory();
-        Navigator.pop(context, true);
+        if (mounted) {
+          Navigator.pop(context, true);
+        }
       } else {
         _showSnackBar(
-          data['message'] ?? 'Erreur lors de l\'enregistrement du dépôt.',
+          data['message'] ?? loc.depositError,
           isError: true,
         );
       }
     } catch (e) {
-      _showSnackBar('Erreur de connexion : $e', isError: true);
+      final loc = AppLocalizations.of(context);
+      _showSnackBar(loc.depositConnectionError(e.toString()), isError: true);
     } finally {
       if (mounted) {
         setState(() {
@@ -244,11 +290,118 @@ class _DepositPageState extends State<DepositPage> {
     );
   }
 
+  Future<void> _closeDeposit() async {
+    if (_selectedClient == null || _selectedProduct == null) return;
+
+    // TODO: Implémenter ici l'appel API qui va clôturer automatiquement
+    // la vente côté serveur et, si nécessaire, enregistrer le crédit client.
+    _showSnackBar(
+      'Clôture du dépôt à implémenter côté serveur.',
+    );
+  }
+
+  /// Imprime un reçu de dépôt sur l'imprimante Sunmi (preuve de paiement)
+  Future<void> _printDepositReceipt({
+    required Client client,
+    required Product product,
+    required double amount,
+    required DateTime date,
+    required bool stockReserved,
+    int? depositId,
+  }) async {
+    final loc = AppLocalizations.of(context);
+    bool? isConnected = await SunmiPrinter.bindingPrinter();
+    if (isConnected != true) {
+      _showSnackBar(
+        loc.depositPrinterError,
+        isError: true,
+      );
+      return;
+    }
+
+    try {
+      await SunmiPrinter.initPrinter();
+
+      // Logo si disponible
+      try {
+        final ByteData logoBytes = await rootBundle.load('assets/logo.png');
+        final Uint8List logoData = logoBytes.buffer.asUint8List();
+        await SunmiPrinter.printImage(logoData);
+        await SunmiPrinter.lineWrap(1);
+      } catch (_) {
+        // Logo optionnel
+      }
+
+      final String dateStr = DateFormat('yyyy-MM-dd HH:mm').format(date);
+
+      final loc = AppLocalizations.of(context);
+      await SunmiPrinter.setAlignment(SunmiPrintAlign.CENTER);
+      await SunmiPrinter.bold();
+      await SunmiPrinter.setFontSize(SunmiFontSize.LG);
+      await SunmiPrinter.printText(loc.depositReceiptTitle);
+      await SunmiPrinter.resetBold();
+      await SunmiPrinter.setFontSize(SunmiFontSize.MD);
+      await SunmiPrinter.lineWrap(1);
+
+      if (depositId != null) {
+        await SunmiPrinter.printText(loc.depositReceiptNumber(depositId));
+      }
+      await SunmiPrinter.printText(loc.depositReceiptDate(dateStr));
+      await SunmiPrinter.line();
+
+      await SunmiPrinter.setAlignment(SunmiPrintAlign.LEFT);
+      await SunmiPrinter.bold();
+      await SunmiPrinter.printText(loc.depositReceiptClient);
+      await SunmiPrinter.resetBold();
+      await SunmiPrinter.printText(loc.depositReceiptClientName(client.name));
+      await SunmiPrinter.lineWrap(1);
+
+      await SunmiPrinter.bold();
+      await SunmiPrinter.printText(loc.depositReceiptProduct);
+      await SunmiPrinter.resetBold();
+      await SunmiPrinter.printText(product.name);
+      await SunmiPrinter.lineWrap(1);
+
+      await SunmiPrinter.bold();
+      await SunmiPrinter.printText(loc.depositReceiptAmount);
+      await SunmiPrinter.resetBold();
+      await SunmiPrinter.printText('${amount.toStringAsFixed(2)} \$');
+      await SunmiPrinter.lineWrap(1);
+
+      await SunmiPrinter.bold();
+      await SunmiPrinter.printText(loc.depositReceiptStockStatus);
+      await SunmiPrinter.resetBold();
+      await SunmiPrinter.printText(
+          stockReserved ? loc.depositReceiptReserved : loc.depositReceiptNotReserved);
+      await SunmiPrinter.lineWrap(2);
+
+      await SunmiPrinter.setFontSize(SunmiFontSize.SM);
+      await SunmiPrinter.printText(loc.depositReceiptProof);
+      await SunmiPrinter.lineWrap(2);
+
+      await SunmiPrinter.setAlignment(SunmiPrintAlign.CENTER);
+      await SunmiPrinter.setFontSize(SunmiFontSize.MD);
+      await SunmiPrinter.printText(loc.depositReceiptThanks);
+      await SunmiPrinter.lineWrap(3);
+
+      await SunmiPrinter.cut();
+    } catch (e) {
+      final loc = AppLocalizations.of(context);
+      _showSnackBar(loc.depositPrintError(e.toString()),
+          isError: true);
+    } finally {
+      try {
+        await SunmiPrinter.unbindingPrinter();
+      } catch (_) {}
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nouveau dépôt'),
+        title: Text(loc.depositTitle),
         backgroundColor: Colors.blueGrey[800],
       ),
       body: _initialLoading
@@ -261,9 +414,9 @@ class _DepositPageState extends State<DepositPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Client',
-                        style: TextStyle(
+                      Text(
+                        loc.depositClientLabel,
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -274,10 +427,10 @@ class _DepositPageState extends State<DepositPage> {
                           return TextField(
                             controller: controller,
                             focusNode: focusNode,
-                            decoration: const InputDecoration(
-                              labelText: 'Rechercher un client',
-                              hintText: 'Tapez le nom du client...',
-                              prefixIcon: Icon(Icons.search),
+                            decoration: InputDecoration(
+                              labelText: loc.depositSearchClient,
+                              hintText: loc.depositSearchClientHint,
+                              prefixIcon: const Icon(Icons.search),
                             ),
                           );
                         },
@@ -307,21 +460,22 @@ class _DepositPageState extends State<DepositPage> {
                           _fetchHistory();
                         },
                         emptyBuilder: (context) {
+                          final loc = AppLocalizations.of(context);
                           return Padding(
                             padding: const EdgeInsets.all(16.0),
                             child: Text(
                               _clients.isEmpty
-                                  ? 'Aucun client enregistré'
-                                  : 'Aucun client trouvé',
+                                  ? loc.depositNoClients
+                                  : loc.depositNoClientFound,
                               style: TextStyle(color: Colors.grey[600]),
                             ),
                           );
                         },
                       ),
                       const SizedBox(height: 20),
-                      const Text(
-                        'Produit',
-                        style: TextStyle(
+                      Text(
+                        loc.depositProductLabel,
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
@@ -338,9 +492,9 @@ class _DepositPageState extends State<DepositPage> {
                               ),
                             )
                             .toList(),
-                        decoration: const InputDecoration(
-                          labelText: 'Sélectionner un produit',
-                          prefixIcon: Icon(Icons.inventory_2),
+                        decoration: InputDecoration(
+                          labelText: loc.depositSelectProduct,
+                          prefixIcon: const Icon(Icons.inventory_2),
                         ),
                         onChanged: (val) {
                           setState(() {
@@ -349,7 +503,7 @@ class _DepositPageState extends State<DepositPage> {
                           _fetchHistory();
                         },
                         validator: (val) => val == null
-                            ? 'Veuillez sélectionner un produit'
+                            ? loc.depositSelectProduct
                             : null,
                       ),
                       const SizedBox(height: 8),
@@ -360,9 +514,9 @@ class _DepositPageState extends State<DepositPage> {
                             Icons.add,
                             size: 18,
                           ),
-                          label: const Text(
-                            'Produit introuvable ? Ajouter un produit',
-                            style: TextStyle(fontSize: 13),
+                          label: Text(
+                            loc.depositProductNotFound,
+                            style: const TextStyle(fontSize: 13),
                           ),
                           onPressed: () async {
                             // Ouvre la page de gestion des produits pour en créer un nouveau
@@ -383,21 +537,21 @@ class _DepositPageState extends State<DepositPage> {
                         controller: _amountController,
                         keyboardType:
                             const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(
-                          labelText: 'Montant du dépôt',
-                          prefixIcon: Icon(Icons.attach_money),
+                        decoration: InputDecoration(
+                          labelText: loc.depositAmountLabel,
+                          prefixIcon: const Icon(Icons.attach_money),
                         ),
                         validator: (val) =>
-                            val == null || val.isEmpty ? 'Montant requis' : null,
+                            val == null || val.isEmpty ? loc.depositAmountLabel : null,
                       ),
                       const SizedBox(height: 20),
                       GestureDetector(
                         onTap: _selectDate,
                         child: AbsorbPointer(
                           child: TextFormField(
-                            decoration: const InputDecoration(
-                              labelText: 'Date du dépôt',
-                              prefixIcon: Icon(Icons.calendar_today),
+                            decoration: InputDecoration(
+                              labelText: loc.depositDateLabel,
+                              prefixIcon: const Icon(Icons.calendar_today),
                             ),
                             controller: TextEditingController(
                               text: DateFormat('yyyy-MM-dd').format(_selectedDate),
@@ -421,7 +575,7 @@ class _DepositPageState extends State<DepositPage> {
                                 )
                               : const Icon(Icons.save),
                           label: Text(
-                            _loading ? 'Enregistrement...' : 'Enregistrer le dépôt',
+                            _loading ? loc.depositSaving : loc.depositSaveButton,
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blueGrey[800],
@@ -434,7 +588,7 @@ class _DepositPageState extends State<DepositPage> {
                       if (_selectedClient != null &&
                           _selectedProduct != null) ...[
                         Text(
-                          'Historique des dépôts pour ce client et ce produit',
+                          loc.depositHistoryTitle,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -446,7 +600,7 @@ class _DepositPageState extends State<DepositPage> {
                           const Center(child: CircularProgressIndicator())
                         else if (_history.isEmpty)
                           Text(
-                            'Aucun dépôt trouvé pour cette sélection.',
+                            loc.depositNoDepositsFound,
                             style: TextStyle(color: Colors.grey[600]),
                           )
                         else ...[
@@ -455,13 +609,62 @@ class _DepositPageState extends State<DepositPage> {
                             child: ListTile(
                               leading: const Icon(Icons.savings,
                                   color: Colors.blueGrey),
-                              title: const Text('Total déjà déposé'),
-                              subtitle: Text(
-                                _currencyFormatter
-                                    .format(_historyTotal),
+                              title: Text(loc.depositTotalDeposited),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _currencyFormatter.format(_historyTotal),
+                                  ),
+                                  if (_selectedProduct != null) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      loc.depositRemainingToPay +
+                                          _currencyFormatter.format(
+                                            _remainingToPay
+                                                .clamp(0, double.infinity),
+                                          ),
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.blueGrey[800],
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    if (_clientCredit > 0) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        loc.depositClientCredit +
+                                            _currencyFormatter
+                                                .format(_clientCredit),
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.green[700],
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ],
                               ),
                             ),
                           ),
+                          const SizedBox(height: 8),
+                          if (_selectedProduct != null &&
+                              _remainingToPay <= 0)
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: _closeDeposit,
+                                icon: const Icon(Icons.check_circle_outline),
+                                label: Text(loc.depositCloseButton),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  foregroundColor: Colors.white,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                              ),
+                            ),
                           const SizedBox(height: 8),
                           ListView.builder(
                             shrinkWrap: true,
@@ -491,8 +694,8 @@ class _DepositPageState extends State<DepositPage> {
                                   subtitle: Text(date.toString()),
                                   trailing: Text(
                                     reserved
-                                        ? 'Réservé'
-                                        : 'Hors stock',
+                                        ? loc.depositReserved
+                                        : loc.depositOutOfStock,
                                     style: TextStyle(
                                       color: reserved
                                           ? Colors.green

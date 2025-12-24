@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:gestion_app_mobile/constants.dart';
+import 'package:gestion_app_mobile/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
@@ -57,20 +58,23 @@ class _SortiePageState extends State<SortiePage> {
             isLoading = false;
           });
         } else {
+          final loc = AppLocalizations.of(context);
           setState(() {
-            errorMessage = data['message'] ?? 'Erreur lors du chargement des sorties';
+            errorMessage = data['message'] ?? loc.sortieLoadError;
             isLoading = false;
           });
         }
       } else {
+        final loc = AppLocalizations.of(context);
         setState(() {
-          errorMessage = 'Erreur serveur (${response.statusCode})';
+          errorMessage = loc.sortieServerError(response.statusCode);
           isLoading = false;
         });
       }
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       setState(() {
-        errorMessage = 'Erreur de connexion: $e';
+        errorMessage = loc.sortieConnectionError(e.toString());
         isLoading = false;
       });
     }
@@ -78,6 +82,7 @@ class _SortiePageState extends State<SortiePage> {
 
   Future<void> _addSortie() async {
   setState(() => isAdding = true);
+  final loc = AppLocalizations.of(context);
   try {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('user_id') ?? 1;
@@ -87,14 +92,14 @@ class _SortiePageState extends State<SortiePage> {
     final motif = motifController.text.trim();
 
     if (montant <= 0 || motif.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Veuillez remplir tous les champs.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loc.sortieFillAllFields)));
       setState(() => isAdding = false);
       return;
     }
     
     // Assurez-vous d'avoir une vérification pour le nom d'utilisateur
     if (username == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nom d\'utilisateur non trouvé. Réessayez de vous connecter.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loc.sortieUsernameNotFound)));
       setState(() => isAdding = false);
       return;
     }
@@ -116,12 +121,13 @@ class _SortiePageState extends State<SortiePage> {
       motifController.clear();
       setState(() => typeAjout = 'normal');
       _fetchSorties();
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sortie enregistrée avec succès!')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loc.sortieSuccess)));
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message'] ?? 'Erreur lors de l\'enregistrement.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message'] ?? loc.sortieSaveError)));
     }
   } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+    final loc = AppLocalizations.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loc.sortieError(e.toString()))));
   } finally {
     setState(() => isAdding = false);
   }
@@ -129,9 +135,10 @@ class _SortiePageState extends State<SortiePage> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sorties de caisse'),
+        title: Text(loc.sortieTitle),
         backgroundColor: Colors.blueGrey[800],
       ),
       body: isLoading
@@ -157,6 +164,7 @@ class _SortiePageState extends State<SortiePage> {
   }
 
   Widget _buildUserSection() {
+    final loc = AppLocalizations.of(context);
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -167,7 +175,7 @@ class _SortiePageState extends State<SortiePage> {
             const Icon(Icons.person, color: Colors.blueGrey, size: 30),
             const SizedBox(width: 12),
             Text(
-              'Utilisateur: ${widget.loggedInUsername}',
+              loc.sortieUserLabel(widget.loggedInUsername),
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -181,6 +189,7 @@ class _SortiePageState extends State<SortiePage> {
   }
 
   Widget _buildAddForm() {
+    final loc = AppLocalizations.of(context);
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -189,27 +198,27 @@ class _SortiePageState extends State<SortiePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Nouvelle sortie', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text(loc.sortieNewTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
             const SizedBox(height: 12),
             TextField(
               controller: montantController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'Montant'),
+              decoration: InputDecoration(labelText: loc.sortieAmountLabel),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: motifController,
-              decoration: const InputDecoration(labelText: 'Motif'),
+              decoration: InputDecoration(labelText: loc.sortieMotifLabel),
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               value: typeAjout,
-              items: const [
-                DropdownMenuItem(value: 'normal', child: Text('Normal')),
-                DropdownMenuItem(value: 'transaction', child: Text('Transaction')),
+              items: [
+                DropdownMenuItem(value: 'normal', child: Text(loc.sortieTypeNormal)),
+                DropdownMenuItem(value: 'transaction', child: Text(loc.sortieTypeTransaction)),
               ],
               onChanged: (v) => setState(() => typeAjout = v ?? 'normal'),
-              decoration: const InputDecoration(labelText: 'Type'),
+              decoration: InputDecoration(labelText: loc.sortieTypeLabel),
             ),
             const SizedBox(height: 12),
             SizedBox(
@@ -218,7 +227,7 @@ class _SortiePageState extends State<SortiePage> {
                 icon: isAdding
                     ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.save),
-                label: const Text('Enregistrer la sortie'),
+                label: Text(loc.sortieSaveButton),
                 onPressed: isAdding ? null : _addSortie,
               ),
             ),
@@ -229,6 +238,7 @@ class _SortiePageState extends State<SortiePage> {
   }
 
   Widget _buildFilters() {
+    final loc = AppLocalizations.of(context);
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -238,11 +248,11 @@ class _SortiePageState extends State<SortiePage> {
           children: [
             DropdownButton<String>(
               value: typeFilter.isEmpty ? null : typeFilter,
-              hint: const Text('Type'),
-              items: const [
-                DropdownMenuItem(value: '', child: Text('Tous')),
-                DropdownMenuItem(value: 'normal', child: Text('Normal')),
-                DropdownMenuItem(value: 'transaction', child: Text('Transaction')),
+              hint: Text(loc.sortieTypeLabel),
+              items: [
+                DropdownMenuItem(value: '', child: Text(loc.sortieFilterAll)),
+                DropdownMenuItem(value: 'normal', child: Text(loc.sortieTypeNormal)),
+                DropdownMenuItem(value: 'transaction', child: Text(loc.sortieTypeTransaction)),
               ],
               onChanged: (v) => setState(() {
                 typeFilter = v ?? '';
@@ -253,7 +263,7 @@ class _SortiePageState extends State<SortiePage> {
             Flexible(
               child: TextField(
                 controller: TextEditingController(text: date),
-                decoration: const InputDecoration(labelText: 'Jour'),
+                decoration: InputDecoration(labelText: loc.sortieFilterDay),
                 readOnly: true,
                 onTap: () async {
                   final picked = await showDatePicker(
@@ -277,7 +287,7 @@ class _SortiePageState extends State<SortiePage> {
             Flexible(
               child: TextField(
                 controller: TextEditingController(text: month),
-                decoration: const InputDecoration(labelText: 'Mois'),
+                decoration: InputDecoration(labelText: loc.sortieFilterMonth),
                 readOnly: true,
                 onTap: () async {
                   final picked = await showDatePicker(
@@ -301,7 +311,7 @@ class _SortiePageState extends State<SortiePage> {
             Flexible(
               child: TextField(
                 controller: TextEditingController(text: year),
-                decoration: const InputDecoration(labelText: 'Année'),
+                decoration: InputDecoration(labelText: loc.sortieFilterYear),
                 readOnly: true,
                 onTap: () async {
                   final picked = await showDatePicker(
@@ -328,6 +338,7 @@ class _SortiePageState extends State<SortiePage> {
   }
 
   Widget _buildSortiesTable() {
+    final loc = AppLocalizations.of(context);
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -345,7 +356,7 @@ class _SortiePageState extends State<SortiePage> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Aucune sortie enregistrée',
+                      loc.sortieNoSorties,
                       style: TextStyle(
                         fontSize: 18,
                         color: Colors.grey[600],
@@ -354,7 +365,7 @@ class _SortiePageState extends State<SortiePage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Les sorties de caisse apparaîtront ici',
+                      loc.sortieEmptyHint,
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[500],
@@ -367,13 +378,13 @@ class _SortiePageState extends State<SortiePage> {
           : SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: DataTable(
-                columns: const [
-                  DataColumn(label: Text('#')),
-                  DataColumn(label: Text('Utilisateur')),
-                  DataColumn(label: Text('Montant')),
-                  DataColumn(label: Text('Motif')),
-                  DataColumn(label: Text('Type')),
-                  DataColumn(label: Text('Date')),
+                columns: [
+                  DataColumn(label: Text(loc.sortieColumnId)),
+                  DataColumn(label: Text(loc.sortieColumnUser)),
+                  DataColumn(label: Text(loc.sortieColumnAmount)),
+                  DataColumn(label: Text(loc.sortieColumnMotif)),
+                  DataColumn(label: Text(loc.sortieColumnType)),
+                  DataColumn(label: Text(loc.sortieColumnDate)),
                 ],
                 rows: sorties.map<DataRow>((s) => DataRow(cells: [
                       DataCell(Text(s['id'].toString())),
@@ -390,17 +401,18 @@ class _SortiePageState extends State<SortiePage> {
   }
 
   Widget _buildTypeBadge(String type) {
+    final loc = AppLocalizations.of(context);
     if (type == 'normal') {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(color: Colors.blue, borderRadius: BorderRadius.circular(8)),
-        child: const Text('Normal', style: TextStyle(color: Colors.white)),
+        child: Text(loc.sortieTypeNormal, style: const TextStyle(color: Colors.white)),
       );
     } else if (type == 'transaction') {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(color: Colors.amber, borderRadius: BorderRadius.circular(8)),
-        child: const Text('Transaction', style: TextStyle(color: Colors.black)),
+        child: Text(loc.sortieTypeTransaction, style: const TextStyle(color: Colors.black)),
       );
     } else {
       return Container(

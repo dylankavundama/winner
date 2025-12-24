@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:gestion_app_mobile/client_model.dart';
 import 'package:gestion_app_mobile/constants.dart';
 import 'package:gestion_app_mobile/deposit_page.dart';
+import 'package:gestion_app_mobile/app_localizations.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
@@ -20,7 +21,7 @@ class _DepositsOverviewPageState extends State<DepositsOverviewPage> {
   final NumberFormat _currencyFormatter =
       NumberFormat.currency(locale: 'fr_FR', symbol: '\$', decimalDigits: 2);
 
-  // clientId -> {client: Client, total: double}
+  // clientId -> {client: Client, total: double, remaining: double}
   final Map<int, Map<String, dynamic>> _clientTotals = {};
 
   @override
@@ -36,6 +37,28 @@ class _DepositsOverviewPageState extends State<DepositsOverviewPage> {
       _clientTotals.clear();
     });
     try {
+      // Charger les prix des produits pour pouvoir calculer le "reste à payer"
+      final productsResponse =
+          await http.get(Uri.parse(ApiConstants.productsApi));
+      final Map<int, double> productPrices = {};
+      if (productsResponse.statusCode == 200) {
+        final prodData = jsonDecode(productsResponse.body);
+        if (prodData is Map &&
+            prodData['success'] == true &&
+            prodData['products'] is List) {
+          for (final p in (prodData['products'] as List)) {
+            final map = p as Map<String, dynamic>;
+            final int id = int.tryParse('${map['id']}') ?? 0;
+            if (id == 0) continue;
+            final dynamic rawPrice = map['prix_vente'];
+            final double price = rawPrice is num
+                ? rawPrice.toDouble()
+                : double.tryParse('$rawPrice') ?? 0.0;
+            productPrices[id] = price;
+          }
+        }
+      }
+
       final response = await http.get(Uri.parse(ApiConstants.depositsApi));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -47,25 +70,49 @@ class _DepositsOverviewPageState extends State<DepositsOverviewPage> {
                 int.tryParse('${map['client_id']}') ?? 0; // nullable safe
             if (clientId == 0) continue;
             final String name = (map['client_name'] ?? '') as String;
-            final num rawAmount = map['amount'] as num? ?? 0;
-            final double amount = rawAmount.toDouble();
+            final int productId =
+                int.tryParse('${map['product_id']}') ?? 0; // nullable safe
+
+            // amount peut venir de l'API en String ou en nombre -> on normalise en double
+            final dynamic rawAmount = map['amount'];
+            final double amount = rawAmount is num
+                ? rawAmount.toDouble()
+                : double.tryParse('$rawAmount') ?? 0.0;
+
+            // Prix du produit pour calculer le reste à payer
+            final double? productPrice = productPrices[productId];
+            double remainingForThisDeposit = 0.0;
+            if (productPrice != null) {
+              remainingForThisDeposit = productPrice - amount;
+              if (remainingForThisDeposit < 0) {
+                remainingForThisDeposit = 0.0;
+              }
+            }
+
             _clientTotals.putIfAbsent(clientId, () {
               return {
                 'client': Client(id: clientId, name: name),
                 'total': 0.0,
+                'remaining': 0.0,
               };
             });
             _clientTotals[clientId]!['total'] =
                 (_clientTotals[clientId]!['total'] as double) + amount;
+            _clientTotals[clientId]!['remaining'] =
+                (_clientTotals[clientId]!['remaining'] as double) +
+                    remainingForThisDeposit;
           }
         } else {
-          _error = data['message'] ?? 'Erreur lors du chargement des dépôts.';
+          final loc = AppLocalizations.of(context);
+          _error = data['message'] ?? loc.depositsOverviewLoadError;
         }
       } else {
-        _error = 'Erreur serveur (${response.statusCode})';
+        final loc = AppLocalizations.of(context);
+        _error = loc.depositsOverviewServerError(response.statusCode);
       }
     } catch (e) {
-      _error = 'Erreur de connexion : $e';
+      final loc = AppLocalizations.of(context);
+      _error = loc.depositsOverviewConnectionError(e.toString());
     } finally {
       if (mounted) {
         setState(() {
@@ -77,13 +124,14 @@ class _DepositsOverviewPageState extends State<DepositsOverviewPage> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final entries = _clientTotals.entries.toList()
       ..sort((a, b) =>
           (b.value['total'] as double).compareTo(a.value['total'] as double));
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Deposits'),
+        title: Text(loc.depositsOverviewTitle),
         backgroundColor: Colors.blueGrey[800],
       ),
       body: RefreshIndicator(
@@ -118,7 +166,7 @@ class _DepositsOverviewPageState extends State<DepositsOverviewPage> {
                                   ),
                                   const SizedBox(height: 16),
                                   Text(
-                                    'Aucun deposit enregistré',
+                                    loc.depositsOverviewEmpty,
                                     style: TextStyle(
                                       fontSize: 18,
                                       color: Colors.grey[600],
@@ -135,10 +183,12 @@ class _DepositsOverviewPageState extends State<DepositsOverviewPage> {
                         padding: const EdgeInsets.all(16),
                         itemCount: entries.length,
                         itemBuilder: (context, index) {
-                          final entry = entries[index];
-                          final client = entry.value['client'] as Client;
-                          final double total =
-                              entry.value['total'] as double? ?? 0.0;
+          final entry = entries[index];
+          final client = entry.value['client'] as Client;
+          final double total =
+              entry.value['total'] as double? ?? 0.0;
+          final double remaining =
+              entry.value['remaining'] as double? ?? 0.0;
                           return Card(
                             margin: const EdgeInsets.symmetric(vertical: 6),
                             child: ListTile(
@@ -154,9 +204,23 @@ class _DepositsOverviewPageState extends State<DepositsOverviewPage> {
                                 ),
                               ),
                               title: Text(client.name),
-                              subtitle: Text(
-                                'Total deposits : ${_currencyFormatter.format(total)}',
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                loc.depositsOverviewTotalDeposits + _currencyFormatter.format(total),
                               ),
+                              if (remaining > 0)
+                                Text(
+                                  loc.depositsOverviewRemainingTotal + _currencyFormatter.format(remaining),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.blueGrey[800],
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                            ],
+                          ),
                               trailing: const Icon(Icons.chevron_right),
                               onTap: () {
                                 Navigator.push(
@@ -237,8 +301,11 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
           final List<Map<String, dynamic>> list = [];
           for (final d in items) {
             final map = d as Map<String, dynamic>;
-            final num rawAmount = map['amount'] as num? ?? 0;
-            sum += rawAmount.toDouble();
+            final dynamic rawAmount = map['amount'];
+            final double amount = rawAmount is num
+                ? rawAmount.toDouble()
+                : double.tryParse('$rawAmount') ?? 0.0;
+            sum += amount;
             list.add(map);
           }
           setState(() {
@@ -246,13 +313,16 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
             _total = sum;
           });
         } else {
-          _error = data['message'] ?? 'Erreur lors du chargement.';
+          final loc = AppLocalizations.of(context);
+          _error = data['message'] ?? loc.depositsOverviewLoadHistoryError;
         }
       } else {
-        _error = 'Erreur serveur (${response.statusCode})';
+        final loc = AppLocalizations.of(context);
+        _error = loc.depositsOverviewServerError(response.statusCode);
       }
     } catch (e) {
-      _error = 'Erreur de connexion : $e';
+      final loc = AppLocalizations.of(context);
+      _error = loc.depositsOverviewConnectionError(e.toString());
     } finally {
       if (mounted) {
         setState(() {
@@ -264,9 +334,10 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text('Deposits - ${widget.client.name}'),
+        title: Text(loc.depositsOverviewHistoryTitle(widget.client.name)),
         backgroundColor: Colors.blueGrey[800],
       ),
       body: RefreshIndicator(
@@ -293,7 +364,7 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
                         child: ListTile(
                           leading: const Icon(Icons.savings,
                               color: Colors.blueGrey),
-                          title: const Text('Total deposits'),
+                          title: Text(loc.depositsOverviewTotal),
                           subtitle: Text(_currencyFormatter.format(_total)),
                         ),
                       ),
@@ -303,15 +374,17 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
                           child: Padding(
                             padding: const EdgeInsets.only(top: 40.0),
                             child: Text(
-                              'Aucun deposit pour ce client.',
+                              loc.depositsOverviewNoDepositsClient,
                               style: TextStyle(color: Colors.grey[600]),
                             ),
                           ),
                         )
                       else
                         ..._history.map((d) {
-                          final num rawAmount = d['amount'] as num? ?? 0;
-                          final double amount = rawAmount.toDouble();
+                          final dynamic rawAmount = d['amount'];
+                          final double amount = rawAmount is num
+                              ? rawAmount.toDouble()
+                              : double.tryParse('$rawAmount') ?? 0.0;
                           final String productName =
                               (d['product_name'] ?? '') as String;
                           final String date =
@@ -338,7 +411,7 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
                                 ],
                               ),
                               trailing: Text(
-                                reserved ? 'Réservé' : 'Hors stock',
+                                reserved ? loc.depositReserved : loc.depositOutOfStock,
                                 style: TextStyle(
                                   color: reserved
                                       ? Colors.green
@@ -349,6 +422,26 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
                             ),
                           );
                         }),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.add),
+                          label: Text(loc.depositsOverviewAddButton),
+                          onPressed: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    DepositPage(initialClient: widget.client),
+                              ),
+                            );
+                            if (result == true) {
+                              await _fetchHistory();
+                            }
+                          },
+                        ),
+                      ),
                     ],
                   ),
       ),
@@ -366,7 +459,7 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
             await _fetchHistory();
           }
         },
-        tooltip: 'Ajouter un deposit',
+        tooltip: loc.depositsOverviewAddTooltip,
         child: const Icon(Icons.add),
       ),
     );

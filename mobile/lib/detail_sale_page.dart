@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:gestion_app_mobile/constants.dart';
+import 'package:gestion_app_mobile/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 class DetailSalePage extends StatefulWidget {
@@ -38,20 +39,23 @@ class _DetailSalePageState extends State<DetailSalePage> {
             isLoading = false;
           });
         } else {
+          final loc = AppLocalizations.of(context);
           setState(() {
-            errorMessage = data['message'] ?? 'Erreur lors du chargement de la vente';
+            errorMessage = data['message'] ?? loc.detailSaleLoadError;
             isLoading = false;
           });
         }
       } else {
+        final loc = AppLocalizations.of(context);
         setState(() {
-          errorMessage = 'Erreur serveur (${response.statusCode})';
+          errorMessage = loc.detailSaleServerError(response.statusCode);
           isLoading = false;
         });
       }
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       setState(() {
-        errorMessage = 'Erreur de connexion: $e';
+        errorMessage = loc.detailSaleConnectionError(e.toString());
         isLoading = false;
       });
     }
@@ -59,9 +63,10 @@ class _DetailSalePageState extends State<DetailSalePage> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Détail de la vente'),
+        title: Text(loc.detailSaleTitle),
         backgroundColor: Colors.blueGrey[800],
       ),
       body: isLoading
@@ -73,6 +78,7 @@ class _DetailSalePageState extends State<DetailSalePage> {
   }
 
   Widget _buildSaleContent() {
+    final loc = AppLocalizations.of(context);
     final client = sale!['client'] as Map<String, dynamic>;
     final products = sale!['products'] as List<dynamic>;
     final total = (sale!['total'] is num)
@@ -90,13 +96,13 @@ class _DetailSalePageState extends State<DetailSalePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Vente #${sale!['id']}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              Text(loc.detailSaleId(sale!['id'] ?? 0), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
-              Text('Date : $date'),
+              Text(loc.detailSaleDate(date)),
               const SizedBox(height: 10),
-              Text('Client : ${client['name'] ?? ''}'),
-              if ((client['phone'] ?? '').isNotEmpty) Text('Téléphone : ${client['phone']}'),
-              if ((client['address'] ?? '').isNotEmpty) Text('Adresse : ${client['address']}'),
+              Text(loc.detailSaleClient(client['name'] ?? '')),
+              if ((client['phone'] ?? '').isNotEmpty) Text(loc.detailSalePhone(client['phone'])),
+              if ((client['address'] ?? '').isNotEmpty) Text(loc.detailSaleAddress(client['address'])),
               const SizedBox(height: 20),
               Table(
                 border: TableBorder.all(color: Colors.grey.shade300),
@@ -107,24 +113,24 @@ class _DetailSalePageState extends State<DetailSalePage> {
                   3: FlexColumnWidth(2),
                 },
                 children: [
-                  const TableRow(
-                    decoration: BoxDecoration(color: Color(0xFFF2F2F2)),
+                  TableRow(
+                    decoration: const BoxDecoration(color: Color(0xFFF2F2F2)),
                     children: [
                       Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text('Produit', style: TextStyle(fontWeight: FontWeight.bold)),
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(loc.detailSaleProduct, style: const TextStyle(fontWeight: FontWeight.bold)),
                       ),
                       Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text('Quantité', style: TextStyle(fontWeight: FontWeight.bold)),
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(loc.detailSaleQuantity, style: const TextStyle(fontWeight: FontWeight.bold)),
                       ),
                       Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text('Prix unitaire', style: TextStyle(fontWeight: FontWeight.bold)),
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(loc.detailSaleUnitPrice, style: const TextStyle(fontWeight: FontWeight.bold)),
                       ),
                       Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text('Total', style: TextStyle(fontWeight: FontWeight.bold)),
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(loc.detailSaleTotal, style: const TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
@@ -158,11 +164,11 @@ class _DetailSalePageState extends State<DetailSalePage> {
                   TableRow(
                     decoration: const BoxDecoration(color: Color(0xFFF2F2F2)),
                     children: [
-                      const Padding(
-                        padding: EdgeInsets.all(8.0),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
                         child: Align(
                           alignment: Alignment.centerRight,
-                          child: Text('Total :', style: TextStyle(fontWeight: FontWeight.bold)),
+                          child: Text(loc.detailSaleTotalLabel, style: const TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ),
                       const SizedBox(),

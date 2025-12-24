@@ -12,7 +12,9 @@ dependencies:
   flutter:
     sdk: flutter
 
-   # flutter_slidable: any
+  flutter_localizations:
+    sdk: flutter
+  # flutter_slidable: any
   http :
   fl_chart :
   shared_preferences :

@@ -16,7 +16,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gestion_app_mobile/client.dart';
 import 'package:gestion_app_mobile/deposits_overview_page.dart';
-
+import 'package:gestion_app_mobile/app_localizations.dart';
+import 'package:gestion_app_mobile/language_selection_page.dart';
 import 'sortie_page.dart';
  
 
@@ -204,6 +205,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -213,12 +215,12 @@ class _DashboardPageState extends State<DashboardPage> {
           );
         },
         child: const Icon(Icons.add),
-        tooltip: 'Ajouter un client',
+        tooltip: loc.dashboardFabNewSaleTooltip,
       ),
       appBar: AppBar(
-        title: const Text(
-          'Tableau de bord du POS',
-          style: TextStyle(
+        title: Text(
+          loc.dashboardTitlePos,
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 22,
             color: Colors.white,
@@ -262,7 +264,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
             ListTile(
               leading: Icon(Icons.people_alt_outlined),
-              title: Text('Clients'),
+              title: Text(loc.dashboardMenuClients),
               onTap: () {
                 Navigator.push(
                     context,
@@ -272,7 +274,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
             ListTile(
               leading: Icon(Icons.inventory_2_outlined),
-              title: Text('Produits'),
+              title: Text(loc.dashboardMenuProducts),
               onTap: () {
                 Navigator.push(
                     context,
@@ -282,7 +284,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
             ListTile(
               leading: Icon(Icons.shopping_cart_outlined),
-              title: Text('Ventes'),
+              title: Text(loc.dashboardMenuSales),
               onTap: () {
                 Navigator.push(
                   context,
@@ -292,7 +294,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
             ListTile(
               leading: Icon(Icons.receipt_long_outlined),
-              title: Text('Factures'),
+              title: Text(loc.dashboardMenuInvoices),
               onTap: () {
                 Navigator.push(
                   context,
@@ -303,7 +305,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
             ListTile(
               leading: Icon(Icons.bar_chart_outlined),
-              title: Text('Rapports'),
+              title: Text(loc.dashboardMenuReports),
               onTap: () {
                 Navigator.push(
                   context,
@@ -313,7 +315,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
             ListTile(
               leading: Icon(Icons.attach_money),
-              title: Text('Bénéfice'),
+              title: Text(loc.dashboardMenuBenefits),
               onTap: () {
                 Navigator.push(
                   context,
@@ -323,7 +325,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
             ListTile(
               leading: const Icon(Icons.savings),
-              title: const Text('Deposits'),
+              title: Text(loc.dashboardMenuDeposits),
               onTap: () {
                 Navigator.push(
                   context,
@@ -334,7 +336,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
             ListTile(
               leading: const Icon(Icons.money_off),
-              title: const Text('Sorties'),
+              title: Text(loc.dashboardMenuExpenses),
               onTap: () {
                 Navigator.push(
                   context,
@@ -347,7 +349,7 @@ class _DashboardPageState extends State<DashboardPage> {
             Divider(),
             ListTile(
               leading: const Icon(Icons.approval),
-              title: const Text('Stock Sortie'),
+              title: Text(loc.dashboardMenuStockOut),
               onTap: () {
                 Navigator.push(
                   context,
@@ -357,9 +359,22 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
             Divider(),
             ListTile(
+              leading: const Icon(Icons.language),
+              title: Text(loc.dashboardMenuLanguage),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const LanguageSelectionPage()),
+                );
+              },
+            ),
+            ListTile(
               leading: Icon(Icons.logout, color: Colors.redAccent),
-              title: Text('Déconnexion',
-                  style: TextStyle(color: Colors.redAccent)),
+              title: Text(
+                loc.dashboardMenuLogout,
+                style: const TextStyle(color: Colors.redAccent),
+              ),
               onTap: _navigateToLogin,
             ),
           ],
@@ -385,9 +400,9 @@ class _DashboardPageState extends State<DashboardPage> {
                     children: [
                       _buildUserInfoCard(widget.loggedInUsername),
                       const SizedBox(height: 30),
-                      const Text(
-                        'Statistiques clés',
-                        style: TextStyle(
+                      Text(
+                        loc.dashboardKeyStatsTitle,
+                        style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: Colors.blueGrey,
@@ -419,32 +434,35 @@ class _DashboardPageState extends State<DashboardPage> {
                             childAspectRatio:
                                 constraints.maxWidth >= 600 ? 1.6 : 1.3,
                             children: [
-                              _buildStatCard('Clients', totalClients.toString(),
+                              _buildStatCard(loc.dashboardStatClients,
+                                  totalClients.toString(),
                                   Icons.people_alt_outlined, Colors.blueAccent),
                               _buildStatCard(
-                                  'Produits',
+                                  loc.dashboardStatProducts,
                                   totalProducts.toString(),
                                   Icons.inventory_2_outlined,
                                   Colors.green),
-                              _buildStatCard('Ventes', totalSales.toString(),
+                              _buildStatCard(
+                                  loc.dashboardStatSales,
+                                  totalSales.toString(),
                                   Icons.shopping_cart_outlined, Colors.teal),
                               _buildStatCard(
-                                  'Factures',
+                                  loc.dashboardStatInvoices,
                                   totalInvoices.toString(),
                                   Icons.receipt_long_outlined,
                                   Colors.orange),
                               _buildStatCard(
-                                  'Total des ventes',
+                                  loc.dashboardStatTotalSalesAmount,
                                   '${totalSalesAmount.toStringAsFixed(2)} \$',
                                   Icons.payments_outlined,
                                   Colors.purple),
                               _buildStatCard(
-                                  'Chiffre d\'affaires',
+                                  loc.dashboardStatRevenue,
                                   '${totalChiffreAffaire.toStringAsFixed(2)} \$',
                                   Icons.area_chart_outlined,
                                   Colors.red),
                               _buildStatCard(
-                                  'Total dépôts',
+                                  loc.dashboardStatTotalDeposits,
                                   '${totalDeposits.toStringAsFixed(2)} \$',
                                   Icons.savings,
                                   Colors.blueGrey),
@@ -453,9 +471,9 @@ class _DashboardPageState extends State<DashboardPage> {
                         },
                       ),
                       const SizedBox(height: 40),
-                      const Text(
-                        'Aperçu des performances',
-                        style: TextStyle(
+                      Text(
+                        loc.dashboardPerfOverviewTitle,
+                        style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: Colors.blueGrey,
@@ -468,16 +486,17 @@ class _DashboardPageState extends State<DashboardPage> {
                         children: [
                           DropdownButton<String>(
                             value: selectedPeriod,
-                            items: const [
+                            items: [
                               DropdownMenuItem(
                                   value: '6mois',
-                                  child: Text('6 derniers mois')),
+                                  child: Text(loc.dashboardPeriod6Months)),
                               DropdownMenuItem(
                                   value: '12mois',
-                                  child: Text('12 derniers mois')),
+                                  child: Text(loc.dashboardPeriod12Months)),
                               DropdownMenuItem(
                                   value: 'annee',
-                                  child: Text('Année en cours')),
+                                  child:
+                                      Text(loc.dashboardPeriodCurrentYear)),
                             ],
                             onChanged: (v) {
                               if (v != null) setState(() => selectedPeriod = v);
@@ -558,11 +577,11 @@ class _DashboardPageState extends State<DashboardPage> {
                                   ),
                                 ],
                               )
-                            : const Center(
+                            : Center(
                                 child: Text(
-                                  'Aucune donnée de vente disponible pour le graphique.',
+                                  loc.dashboardChartNoData,
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                       fontSize: 16, color: Colors.grey),
                                 ),
                               ),
@@ -680,10 +699,14 @@ class _DashboardPageState extends State<DashboardPage> {
                     color: Colors.white,
                   ),
                 ),
-                Text(
-                  'Bienvenue sur votre tableau de bord!',
-                  style: TextStyle(fontSize: 11, color: Colors.blueGrey[200]),
-                ),
+                Builder(builder: (context) {
+                  final loc = AppLocalizations.of(context);
+                  return Text(
+                    loc.dashboardUserWelcome,
+                    style:
+                        TextStyle(fontSize: 11, color: Colors.blueGrey[200]),
+                  );
+                }),
               ],
             ),
           ],

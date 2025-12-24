@@ -14,6 +14,8 @@ import 'package:gestion_app_mobile/client.dart';
 import 'sortie_page.dart';
 import 'package:gestion_app_mobile/detail_sale_page.dart';
 import 'package:intl/intl.dart';
+import 'package:gestion_app_mobile/app_localizations.dart';
+import 'package:gestion_app_mobile/language_selection_page.dart';
 
 class DashboardPageVendeur extends StatefulWidget {
   final String loggedInUsername;
@@ -91,6 +93,7 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
               final previousCount = _lastVenteCount;
               _lastVenteCount = ventes.length;
               if (mounted && previousCount > 0) {
+                final loc = AppLocalizations.of(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Row(
@@ -100,8 +103,8 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
                         Expanded(
                           child: Text(
                             ventes.length > previousCount
-                                ? 'Nouvelle vente enregistrée !'
-                                : 'Données mises à jour',
+                                ? loc.vendorNewSaleNotification
+                                : loc.vendorDataUpdated,
                             style: const TextStyle(fontSize: 12),
                           ),
                         ),
@@ -119,34 +122,37 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
               _lastVenteCount = ventes.length;
             }
           }
+          } else {
+            if (mounted) {
+              final loc = AppLocalizations.of(context);
+              setState(() {
+                errorMessage =
+                    data['message'] ?? loc.vendorLoadError;
+                isLoading = false;
+                _isRefreshing = false;
+              });
+            }
+          }
         } else {
           if (mounted) {
+            final loc = AppLocalizations.of(context);
             setState(() {
-              errorMessage =
-                  data['message'] ?? 'Erreur lors du chargement des ventes';
+              errorMessage = loc.vendorServerError(response.statusCode);
               isLoading = false;
               _isRefreshing = false;
             });
           }
         }
-      } else {
+      } catch (e) {
         if (mounted) {
+          final loc = AppLocalizations.of(context);
           setState(() {
-            errorMessage = 'Erreur serveur (${response.statusCode})';
+            errorMessage = loc.vendorConnectionError(e.toString());
             isLoading = false;
             _isRefreshing = false;
           });
         }
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          errorMessage = 'Erreur de connexion: $e';
-          isLoading = false;
-          _isRefreshing = false;
-        });
-      }
-    }
   }
 
   void _logout() async {
@@ -215,9 +221,10 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tableau de bord Vendeur'),
+        title: Text(loc.vendorDashboardTitle),
         backgroundColor: Colors.blueGrey[800],
         actions: [
           // Indicateur d'actualisation automatique
@@ -235,12 +242,12 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
             ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: 'Actualiser',
+            tooltip: loc.vendorActionRefresh,
             onPressed: () => _fetchVentes(),
           ),
           IconButton(
             icon: const Icon(Icons.calendar_today),
-            tooltip: 'Filtrer par date',
+            tooltip: loc.vendorActionFilterDate,
             onPressed: () async {
               final picked = await showDatePicker(
                 context: context,
@@ -258,7 +265,7 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
           if (selectedDate != null)
             IconButton(
               icon: const Icon(Icons.clear),
-              tooltip: 'Réinitialiser le filtre',
+              tooltip: loc.vendorActionResetFilter,
               onPressed: () {
                 setState(() {
                   selectedDate = null;
@@ -286,7 +293,7 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
             ),
             ListTile(
               leading: const Icon(Icons.dashboard),
-              title: const Text('Dashboard'),
+              title: Text(loc.vendorMenuDashboard),
               onTap: () {
                 Navigator.pushReplacement(
                   context,
@@ -299,7 +306,7 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
             ),
             ListTile(
               leading: const Icon(Icons.shopping_cart),
-              title: const Text('Ventes'),
+              title: Text(loc.vendorMenuSales),
               onTap: () {
                 Navigator.push(
                   context,
@@ -312,7 +319,7 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
             ),
             ListTile(
               leading: const Icon(Icons.receipt),
-              title: const Text('Factures'),
+              title: Text(loc.vendorMenuInvoices),
               onTap: () {
                 Navigator.push(
                   context,
@@ -324,7 +331,7 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
             ),
             ListTile(
               leading: const Icon(Icons.people),
-              title: const Text('Clients'),
+              title: Text(loc.vendorMenuClients),
               onTap: () {
                 Navigator.push(
                   context,
@@ -334,7 +341,7 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
             ),
             ListTile(
               leading: const Icon(Icons.inventory),
-              title: const Text('Produits'),
+              title: Text(loc.vendorMenuProducts),
               onTap: () {
                 Navigator.push(
                   context,
@@ -355,7 +362,7 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
 
             ListTile(
               leading: const Icon(Icons.money_off),
-              title: const Text('Sorties'),
+              title: Text(loc.vendorMenuExpenses),
               onTap: () {
                 Navigator.push(
                   context,
@@ -368,7 +375,7 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
 
             ListTile(
               leading: const Icon(Icons.approval),
-              title: const Text('Sortie Stock'),
+              title: Text(loc.vendorMenuStockOut),
               onTap: () {
                 Navigator.push(
                   context,
@@ -379,9 +386,23 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
             ),
             const Divider(),
             ListTile(
+              leading: const Icon(Icons.language),
+              title: Text(loc.dashboardMenuLanguage),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LanguageSelectionPage(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.logout, color: Colors.redAccent),
-              title: const Text('Déconnexion',
-                  style: TextStyle(color: Colors.redAccent)),
+              title: Text(
+                loc.vendorMenuLogout,
+                style: const TextStyle(color: Colors.redAccent),
+              ),
               onTap: _logout,
             ),
           ],
@@ -406,8 +427,8 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
                               const SizedBox(height: 16),
                               Text(
                                 selectedDate == null
-                                    ? 'Aucune vente enregistrée'
-                                    : 'Aucune vente pour cette date',
+                                    ? loc.vendorEmptyNoSales
+                                    : loc.vendorEmptyNoSalesForDate,
                                 style: TextStyle(
                                   fontSize: 18,
                                   color: Colors.grey[600],
@@ -417,8 +438,8 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
                               const SizedBox(height: 8),
                               Text(
                                 selectedDate == null
-                                    ? 'Les ventes apparaîtront ici'
-                                    : 'Essayez une autre date',
+                                    ? loc.vendorEmptyHint
+                                    : loc.vendorEmptyHintOtherDate,
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey[500],
@@ -439,8 +460,7 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
                                 child: ListTile(
                                   leading: const Icon(Icons.savings,
                                       color: Colors.blueGrey),
-                                  title: const Text(
-                                      'Total dépôts enregistrés'),
+                                title: Text(loc.vendorTotalDepositsTitle),
                                   subtitle: Text(
                                       '${totalDeposits.toStringAsFixed(2)} \$'),
                                 ),
@@ -454,9 +474,15 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
                                 leading:
                                     const Icon(Icons.shopping_bag),
                                 title: Text(
-                                    'Vente #${vente['id']} - ${vente['client_name'] ?? ''}'),
+                                    loc.vendorSaleItemTitle(
+                                      vente['id'] ?? 0,
+                                      vente['client_name'] ?? '',
+                                    )),
                                 subtitle: Text(
-                                    'Montant: ${vente['total']} \$ \nDate: ${vente['sale_date']} '),
+                                    loc.vendorSaleItemSubtitle(
+                                      '${vente['total']}',
+                                      vente['sale_date'] ?? '',
+                                    )),
                                 onTap: () => Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -476,7 +502,7 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
               context, MaterialPageRoute(builder: (context) => VentePage()));
         },
         child: const Icon(Icons.add),
-        tooltip: 'Nouvelle vente',
+        tooltip: loc.vendorFabNewSale,
       ),
     );
   }

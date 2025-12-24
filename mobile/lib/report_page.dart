@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:gestion_app_mobile/constants.dart';
+import 'package:gestion_app_mobile/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 class ReportPage extends StatefulWidget {
@@ -51,21 +52,24 @@ class _ReportPageState extends State<ReportPage>
             isLoading = false;
           });
         } else {
+          final loc = AppLocalizations.of(context);
           setState(() {
             errorMessage =
-                data['message'] ?? 'Erreur lors du chargement des rapports';
+                data['message'] ?? loc.reportLoadError;
             isLoading = false;
           });
         }
       } else {
+        final loc = AppLocalizations.of(context);
         setState(() {
-          errorMessage = 'Erreur serveur (${response.statusCode})';
+          errorMessage = loc.reportServerError(response.statusCode);
           isLoading = false;
         });
       }
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       setState(() {
-        errorMessage = 'Erreur de connexion: $e';
+        errorMessage = loc.reportConnectionError(e.toString());
         isLoading = false;
       });
     }
@@ -79,20 +83,21 @@ class _ReportPageState extends State<ReportPage>
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Rapports'),
+        title: Text(loc.reportTitle),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
+          tabs: [
             Tab(
-              text: 'Ventes',
+              text: loc.reportTabSales,
             ),
-            Tab(text: 'Stock faible'),
-            Tab(text: 'Top clients'),
-            Tab(text: 'Impayées'),
+            Tab(text: loc.reportTabLowStock),
+            Tab(text: loc.reportTabTopClients),
+            Tab(text: loc.reportTabUnpaid),
           ],
         ),
       ),
@@ -113,6 +118,7 @@ class _ReportPageState extends State<ReportPage>
   }
 
   Widget _buildSalesTab() {
+    final loc = AppLocalizations.of(context);
     return Column(
       children: [
         Padding(
@@ -122,7 +128,7 @@ class _ReportPageState extends State<ReportPage>
               Expanded(
                 child: TextField(
                   controller: TextEditingController(text: start),
-                  decoration: const InputDecoration(labelText: 'Du'),
+                  decoration: InputDecoration(labelText: loc.reportDateFrom),
                   readOnly: true,
                   onTap: () async {
                     final picked = await showDatePicker(
@@ -143,7 +149,7 @@ class _ReportPageState extends State<ReportPage>
               Expanded(
                 child: TextField(
                   controller: TextEditingController(text: end),
-                  decoration: const InputDecoration(labelText: 'Au'),
+                  decoration: InputDecoration(labelText: loc.reportDateTo),
                   readOnly: true,
                   onTap: () async {
                     final picked = await showDatePicker(
@@ -163,7 +169,7 @@ class _ReportPageState extends State<ReportPage>
               const SizedBox(width: 12),
               ElevatedButton(
                 onPressed: () => _fetchReports(),
-                child: const Text('Filtrer'),
+                child: Text(loc.reportFilterButton),
               ),
             ],
           ),
@@ -174,6 +180,7 @@ class _ReportPageState extends State<ReportPage>
   }
 
   Widget _buildSalesTable() {
+    final loc = AppLocalizations.of(context);
     return Card(
       child: sales.isEmpty
           ? Padding(
@@ -189,7 +196,7 @@ class _ReportPageState extends State<ReportPage>
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Aucune vente trouvée',
+                      loc.reportNoSales,
                       style: TextStyle(
                         fontSize: 18,
                         color: Colors.grey[600],
@@ -198,7 +205,7 @@ class _ReportPageState extends State<ReportPage>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Aucune vente pour la période sélectionnée',
+                      loc.reportNoSalesPeriod,
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[500],
@@ -211,11 +218,11 @@ class _ReportPageState extends State<ReportPage>
           : SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: DataTable(
-                columns: const [
-                  DataColumn(label: Text('ID')),
-                  DataColumn(label: Text('Client')),
-                  DataColumn(label: Text('Date')),
-                  DataColumn(label: Text('Total')),
+                columns: [
+                  DataColumn(label: Text(loc.reportSalesColumnId)),
+                  DataColumn(label: Text(loc.reportSalesColumnClient)),
+                  DataColumn(label: Text(loc.reportSalesColumnDate)),
+                  DataColumn(label: Text(loc.reportSalesColumnTotal)),
                 ],
                 rows: sales
                     .map<DataRow>((s) => DataRow(cells: [
@@ -231,6 +238,7 @@ class _ReportPageState extends State<ReportPage>
   }
 
   Widget _buildLowStockTable() {
+    final loc = AppLocalizations.of(context);
     return Card(
       child: lowStock.isEmpty
           ? Padding(
@@ -246,7 +254,7 @@ class _ReportPageState extends State<ReportPage>
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Aucun produit en stock faible',
+                      loc.reportNoLowStock,
                       style: TextStyle(
                         fontSize: 18,
                         color: Colors.grey[600],
@@ -255,7 +263,7 @@ class _ReportPageState extends State<ReportPage>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Tous les produits ont un stock suffisant',
+                      loc.reportAllStockSufficient,
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[500],
@@ -268,11 +276,11 @@ class _ReportPageState extends State<ReportPage>
           : SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: DataTable(
-                columns: const [
-                  DataColumn(label: Text('ID')),
-                  DataColumn(label: Text('Nom')),
-                  DataColumn(label: Text('Quantité')),
-                  DataColumn(label: Text('Prix')),
+                columns: [
+                  DataColumn(label: Text(loc.reportLowStockColumnId)),
+                  DataColumn(label: Text(loc.reportLowStockColumnName)),
+                  DataColumn(label: Text(loc.reportLowStockColumnQuantity)),
+                  DataColumn(label: Text(loc.reportLowStockColumnPrice)),
                 ],
                 rows: lowStock
                     .map<DataRow>((p) => DataRow(cells: [
@@ -288,6 +296,7 @@ class _ReportPageState extends State<ReportPage>
   }
 
   Widget _buildTopClientsTable() {
+    final loc = AppLocalizations.of(context);
     return Card(
       child: topClients.isEmpty
           ? Padding(
@@ -303,7 +312,7 @@ class _ReportPageState extends State<ReportPage>
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Aucun client trouvé',
+                      loc.reportNoClients,
                       style: TextStyle(
                         fontSize: 18,
                         color: Colors.grey[600],
@@ -312,7 +321,7 @@ class _ReportPageState extends State<ReportPage>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Aucun client pour la période sélectionnée',
+                      loc.reportNoClientsPeriod,
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[500],
@@ -325,9 +334,9 @@ class _ReportPageState extends State<ReportPage>
           : SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: DataTable(
-                columns: const [
-                  DataColumn(label: Text('Client')),
-                  DataColumn(label: Text('Total achats')),
+                columns: [
+                  DataColumn(label: Text(loc.reportTopClientsColumnClient)),
+                  DataColumn(label: Text(loc.reportTopClientsColumnTotal)),
                 ],
                 rows: topClients
                     .map<DataRow>((c) => DataRow(cells: [
@@ -341,6 +350,7 @@ class _ReportPageState extends State<ReportPage>
   }
 
   Widget _buildUnpaidTable() {
+    final loc = AppLocalizations.of(context);
     return Card(
       child: unpaid.isEmpty
           ? Padding(
@@ -356,7 +366,7 @@ class _ReportPageState extends State<ReportPage>
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Aucune facture impayée',
+                      loc.reportNoUnpaid,
                       style: TextStyle(
                         fontSize: 18,
                         color: Colors.grey[600],
@@ -365,7 +375,7 @@ class _ReportPageState extends State<ReportPage>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Toutes les factures sont payées',
+                      loc.reportAllInvoicesPaid,
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[500],
@@ -378,11 +388,11 @@ class _ReportPageState extends State<ReportPage>
           : SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: DataTable(
-                columns: const [
-                  DataColumn(label: Text('ID')),
-                  DataColumn(label: Text('Client')),
-                  DataColumn(label: Text('Date')),
-                  DataColumn(label: Text('Montant')),
+                columns: [
+                  DataColumn(label: Text(loc.reportUnpaidColumnId)),
+                  DataColumn(label: Text(loc.reportUnpaidColumnClient)),
+                  DataColumn(label: Text(loc.reportUnpaidColumnDate)),
+                  DataColumn(label: Text(loc.reportUnpaidColumnAmount)),
                 ],
                 rows: unpaid
                     .map<DataRow>((f) => DataRow(cells: [

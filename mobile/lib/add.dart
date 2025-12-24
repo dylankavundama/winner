@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:gestion_app_mobile/constants.dart'; // Assurez-vous que ce fichier existe
+import 'package:gestion_app_mobile/constants.dart';
+import 'package:gestion_app_mobile/app_localizations.dart';
 
 class AddProductPage extends StatefulWidget {
   const AddProductPage({Key? key}) : super(key: key);
@@ -68,26 +69,28 @@ class _AddProductPageState extends State<AddProductPage> {
           body: jsonEncode(productData),
         );
 
+        final loc = AppLocalizations.of(context);
         if (response.statusCode == 200) {
           final responseBody = json.decode(response.body);
           if (responseBody['success']) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Produit ajouté avec succès !'), backgroundColor: Colors.green),
+              SnackBar(content: Text(loc.addProductSuccess), backgroundColor: Colors.green),
             );
             Navigator.pop(context, true); // Fermer la page et retourner true pour indiquer le succès
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Erreur : ${responseBody['message']}'), backgroundColor: Colors.red),
+              SnackBar(content: Text(loc.addProductError(responseBody['message'] ?? '')), backgroundColor: Colors.red),
             );
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur HTTP: ${response.statusCode}'), backgroundColor: Colors.red),
+            SnackBar(content: Text(loc.addProductHttpError(response.statusCode)), backgroundColor: Colors.red),
           );
         }
       } catch (e) {
+        final loc = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur de connexion : $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(loc.addProductConnectionError(e.toString())), backgroundColor: Colors.red),
         );
       } finally {
         setState(() {
@@ -99,9 +102,10 @@ class _AddProductPageState extends State<AddProductPage> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ajouter un Produit'),
+        title: Text(loc.addProductTitle),
         backgroundColor: Colors.blueGrey[800],
       ),
       body: SingleChildScrollView(
@@ -110,15 +114,15 @@ class _AddProductPageState extends State<AddProductPage> {
           key: _formKey,
           child: Column(
             children: [
-              _buildTextField(_nameController, 'Nom du produit'),
+              _buildTextField(context, _nameController, loc.addProductNameLabel),
               const SizedBox(height: 16),
-              _buildTextField(_descriptionController, 'Description', maxLines: 3),
+              _buildTextField(context, _descriptionController, loc.addProductDescriptionLabel, maxLines: 3),
               const SizedBox(height: 16),
-              _buildTextField(_priceController, 'Prix d\'achat', keyboardType: TextInputType.number),
+              _buildTextField(context, _priceController, loc.addProductPriceLabel, keyboardType: TextInputType.number),
               const SizedBox(height: 16),
-              _buildTextField(_prixVenteController, 'Prix de vente', keyboardType: TextInputType.number),
+              _buildTextField(context, _prixVenteController, loc.addProductSalePriceLabel, keyboardType: TextInputType.number),
               const SizedBox(height: 16),
-              _buildTextField(_quantityController, 'Quantité', keyboardType: TextInputType.number),
+              _buildTextField(context, _quantityController, loc.addProductQuantityLabel, keyboardType: TextInputType.number),
               const SizedBox(height: 24),
               _isLoading
                   ? const CircularProgressIndicator()
@@ -129,7 +133,7 @@ class _AddProductPageState extends State<AddProductPage> {
                         padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                      child: const Text('Ajouter le produit', style: TextStyle(fontSize: 16)),
+                      child: Text(loc.addProductButton, style: const TextStyle(fontSize: 16)),
                     ),
             ],
           ),
@@ -138,7 +142,8 @@ class _AddProductPageState extends State<AddProductPage> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, {int maxLines = 1, TextInputType keyboardType = TextInputType.text}) {
+  Widget _buildTextField(BuildContext context, TextEditingController controller, String label, {int maxLines = 1, TextInputType keyboardType = TextInputType.text}) {
+    final loc = AppLocalizations.of(context);
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
@@ -151,10 +156,10 @@ class _AddProductPageState extends State<AddProductPage> {
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return 'Ce champ est obligatoire';
+          return loc.addProductFieldRequired;
         }
         if (keyboardType == TextInputType.number && double.tryParse(value) == null) {
-          return 'Veuillez entrer un nombre valide';
+          return loc.addProductInvalidNumber;
         }
         return null;
       },

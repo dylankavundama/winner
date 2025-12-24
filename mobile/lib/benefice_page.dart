@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:gestion_app_mobile/constants.dart';
+import 'package:gestion_app_mobile/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 class BeneficePage extends StatefulWidget {
@@ -14,6 +15,9 @@ class BeneficePage extends StatefulWidget {
 class _BeneficePageState extends State<BeneficePage> {
   bool isLoading = true;
   String? errorMessage;
+  String? errorType; // 'load', 'server', 'connection'
+  int? errorCode; // Pour les erreurs serveur
+  String? errorDetails; // Détails de l'erreur
   double beneficeBrut = 0;
   double depenses = 0;
   double beneficeExact = 0;
@@ -34,6 +38,9 @@ class _BeneficePageState extends State<BeneficePage> {
     setState(() {
       isLoading = true;
       errorMessage = null;
+      errorType = null;
+      errorCode = null;
+      errorDetails = null;
     });
     try {
       final params = <String, String>{};
@@ -54,20 +61,22 @@ class _BeneficePageState extends State<BeneficePage> {
           });
         } else {
           setState(() {
-            errorMessage =
-                data['message'] ?? 'Erreur lors du chargement du bénéfice';
+            errorType = 'load';
+            errorMessage = data['message'];
             isLoading = false;
           });
         }
       } else {
         setState(() {
-          errorMessage = 'Erreur serveur (${response.statusCode})';
+          errorType = 'server';
+          errorCode = response.statusCode;
           isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        errorMessage = 'Erreur de connexion: $e';
+        errorType = 'connection';
+        errorDetails = e.toString();
         isLoading = false;
       });
     }
@@ -75,20 +84,30 @@ class _BeneficePageState extends State<BeneficePage> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Bénéfice'),
+        title: Text(loc.beneficeTitle),
         backgroundColor: Colors.blueGrey[800],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : errorMessage != null
-              ? Center(child: Text(errorMessage!))
+          : errorType != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      _getErrorMessage(loc),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                )
               : _buildBeneficeContent(),
     );
   }
 
   Widget _buildBeneficeContent() {
+    final loc = AppLocalizations.of(context);
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -101,8 +120,8 @@ class _BeneficePageState extends State<BeneficePage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Calcul du bénéfice',
-                    style: TextStyle(
+                Text(loc.beneficeCalculationTitle,
+                    style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: Colors.blue)),
@@ -113,7 +132,7 @@ class _BeneficePageState extends State<BeneficePage> {
                     Flexible(
                       child: TextField(
                         controller: TextEditingController(text: date),
-                        decoration: const InputDecoration(labelText: 'Jour'),
+                        decoration: InputDecoration(labelText: loc.beneficeDayLabel),
                         readOnly: true,
                         onTap: () async {
                           final picked = await showDatePicker(
@@ -139,7 +158,7 @@ class _BeneficePageState extends State<BeneficePage> {
                     Flexible(
                       child: TextField(
                         controller: TextEditingController(text: month),
-                        decoration: const InputDecoration(labelText: 'Mois'),
+                        decoration: InputDecoration(labelText: loc.beneficeMonthLabel),
                         readOnly: true,
                         onTap: () async {
                           final picked = await showDatePicker(
@@ -165,7 +184,7 @@ class _BeneficePageState extends State<BeneficePage> {
                     Flexible(
                       child: TextField(
                         controller: TextEditingController(text: year),
-                        decoration: const InputDecoration(labelText: 'Année'),
+                        decoration: InputDecoration(labelText: loc.beneficeYearLabel),
                         readOnly: true,
                         onTap: () async {
                           final picked = await showDatePicker(
@@ -190,21 +209,21 @@ class _BeneficePageState extends State<BeneficePage> {
                   ],
                 ),
                 const SizedBox(height: 24),
-                const Text('Bénéfice brut pour la période sélectionnée :'),
+                Text(loc.beneficeGrossProfitLabel),
                 Text('${beneficeBrut.toStringAsFixed(2)} \$',
                     style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                         color: Colors.blue)),
                 const SizedBox(height: 16),
-                const Text('Dépenses déclarées :'),
+                Text(loc.beneficeExpensesLabel),
                 Text('${depenses.toStringAsFixed(2)} \$',
                     style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                         color: Colors.red)),
                 const SizedBox(height: 16),
-                const Text('Bénéfice exact :'),
+                Text(loc.beneficeExactProfitLabel),
                 Text('${beneficeExact.toStringAsFixed(2)} \$',
                     style: const TextStyle(
                         fontSize: 32,
@@ -216,5 +235,18 @@ class _BeneficePageState extends State<BeneficePage> {
         ),
       ),
     );
+  }
+
+  String _getErrorMessage(AppLocalizations loc) {
+    switch (errorType) {
+      case 'load':
+        return errorMessage ?? loc.beneficeLoadError;
+      case 'server':
+        return loc.beneficeServerError(errorCode ?? 0);
+      case 'connection':
+        return loc.beneficeConnectionError(errorDetails ?? '');
+      default:
+        return errorMessage ?? loc.beneficeLoadError;
+    }
   }
 }

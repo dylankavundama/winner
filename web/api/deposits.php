@@ -39,47 +39,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
-        // Vérifier le stock du produit
-        $stmt = $pdo->prepare('SELECT quantity FROM products WHERE id = :id');
-        $stmt->execute([':id' => $productId]);
-        $product = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$product) {
-            http_response_code(404);
-            echo json_encode([
-                'success' => false,
-                'message' => 'Produit introuvable.',
-            ]);
-            exit;
-        }
-
-        $quantity = (int)$product['quantity'];
         $stockReserved = 0;
         $message = '';
 
         $pdo->beginTransaction();
 
-        if ($quantity > 0) {
-            // Réserver 1 unité du produit (sortir du stock)
-            $update = $pdo->prepare(
-                'UPDATE products SET quantity = quantity - 1 WHERE id = :id AND quantity > 0'
-            );
-            $update->execute([':id' => $productId]);
+        // Vérifier si un dépôt précédent a déjà réservé ce produit pour ce client
+        $existing = $pdo->prepare(
+            'SELECT COUNT(*) FROM deposits 
+             WHERE client_id = :client_id AND product_id = :product_id AND stock_reserved = 1'
+        );
+        $existing->execute([
+            ':client_id' => $clientId,
+            ':product_id' => $productId,
+        ]);
+        $alreadyReserved = (int)$existing->fetchColumn() > 0;
 
-            // Vérifier qu'une ligne a bien été mise à jour
-            if ($update->rowCount() > 0) {
-                $stockReserved = 1;
-                $message =
-                    'Dépôt enregistré et produit réservé (retiré du stock).';
-            } else {
-                // Conflit de stock (autre opération en même temps)
-                $message =
-                    'Dépôt enregistré, mais le produit est maintenant en rupture de stock.';
-            }
-        } else {
-            // Pas de stock disponible
+        if ($alreadyReserved) {
+            // Le stock a déjà été décrémenté lors du premier dépôt pour ce client/produit.
+            // On n'enlève PAS à nouveau du stock, mais on garde l'info de réservation.
+            $stockReserved = 1;
             $message =
-                'Dépôt enregistré, mais le produit est actuellement hors stock.';
+                'Dépôt supplémentaire enregistré pour un produit déjà réservé.';
+        } else {
+            // Premier dépôt pour ce client/produit : on réserve le stock
+            $stmt = $pdo->prepare('SELECT quantity FROM products WHERE id = :id');
+            $stmt->execute([':id' => $productId]);
+            $product = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$product) {
+                http_response_code(404);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Produit introuvable.',
+                ]);
+                exit;
+            }
+
+            $quantity = (int)$product['quantity'];
+
+            if ($quantity > 0) {
+                // Réserver 1 unité du produit (sortir du stock)
+                $update = $pdo->prepare(
+                    'UPDATE products SET quantity = quantity - 1 WHERE id = :id AND quantity > 0'
+                );
+                $update->execute([':id' => $productId]);
+
+                // Vérifier qu'une ligne a bien été mise à jour
+                if ($update->rowCount() > 0) {
+                    $stockReserved = 1;
+                    $message =
+                        'Dépôt enregistré et produit réservé (retiré du stock).';
+                } else {
+                    // Conflit de stock (autre opération en même temps)
+                    $message =
+                        'Dépôt enregistré, mais le produit est maintenant en rupture de stock.';
+                }
+            } else {
+                // Pas de stock disponible
+                $message =
+                    'Dépôt enregistré, mais le produit est actuellement hors stock.';
+            }
         }
 
         // Enregistrer le dépôt avec l\'info de réservation

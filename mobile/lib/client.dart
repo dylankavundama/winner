@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:gestion_app_mobile/constants.dart';
+import 'package:gestion_app_mobile/app_localizations.dart';
 
 class ClientPage extends StatefulWidget {
   const ClientPage({Key? key}) : super(key: key);
@@ -14,6 +15,9 @@ class _ClientPageState extends State<ClientPage> {
   List<Map<String, dynamic>> clients = [];
   bool isLoading = true;
   String? errorMessage;
+  String? errorType; // 'unexpected', 'load', 'connection'
+  int? errorCode;
+  String? errorDetails;
 
   @override
   void initState() {
@@ -41,7 +45,7 @@ class _ClientPageState extends State<ClientPage> {
               .toList();
         } else {
           setState(() {
-            errorMessage = 'Format de réponse inattendu.';
+            errorType = 'unexpected';
             isLoading = false;
           });
           return;
@@ -52,14 +56,15 @@ class _ClientPageState extends State<ClientPage> {
         });
       } else {
         setState(() {
-          errorMessage =
-              'Erreur lors du chargement des clients (${response.statusCode})';
+          errorType = 'load';
+          errorCode = response.statusCode;
           isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        errorMessage = 'Erreur de connexion: $e';
+        errorType = 'connection';
+        errorDetails = e.toString();
         isLoading = false;
       });
     }
@@ -69,14 +74,23 @@ class _ClientPageState extends State<ClientPage> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Clients'),
+        title: Text(loc.clientTitle),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : errorMessage != null
-              ? Center(child: Text(errorMessage!))
+          : errorType != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      _getErrorMessage(loc),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                )
               : clients.isEmpty
                   ? Center(
                       child: Column(
@@ -89,7 +103,7 @@ class _ClientPageState extends State<ClientPage> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'Aucun client enregistré',
+                            loc.clientEmptyTitle,
                             style: TextStyle(
                               fontSize: 18,
                               color: Colors.grey[600],
@@ -98,7 +112,7 @@ class _ClientPageState extends State<ClientPage> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Les clients ajoutés apparaîtront ici',
+                            loc.clientEmptyHint,
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[500],
@@ -115,7 +129,7 @@ class _ClientPageState extends State<ClientPage> {
                         final client = clients[index];
                         return ListTile(
                           leading: const Icon(Icons.person),
-                          title: Text(client['name'] ?? 'Nom inconnu'),
+                          title: Text(client['name'] ?? loc.clientUnknownName),
                           subtitle: Text(client['email'] ?? ''),
                           trailing: Text(client['phone'] ?? ''),
                         );
@@ -123,5 +137,18 @@ class _ClientPageState extends State<ClientPage> {
                     ),
  
     );
+  }
+
+  String _getErrorMessage(AppLocalizations loc) {
+    switch (errorType) {
+      case 'unexpected':
+        return loc.clientUnexpectedFormat;
+      case 'load':
+        return loc.clientLoadError(errorCode ?? 0);
+      case 'connection':
+        return loc.clientConnectionError(errorDetails ?? '');
+      default:
+        return loc.clientUnexpectedFormat;
+    }
   }
 }

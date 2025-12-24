@@ -3,6 +3,7 @@ import 'package:gestion_app_mobile/get_out.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:gestion_app_mobile/constants.dart';
+import 'package:gestion_app_mobile/app_localizations.dart';
 import 'package:gestion_app_mobile/client_model.dart';
 import 'package:gestion_app_mobile/product_model.dart' show Product;
 
@@ -62,11 +63,13 @@ class _NewSalePageState extends State<NewSalePage> {
             productsData.map((json) => Product.fromJson(json)).toList();
         _filteredProducts = _allProducts.where((p) => p.quantity > 0).toList();
       } else {
+        final loc = AppLocalizations.of(context);
         _errorMessage =
-            data['message'] ?? 'Erreur lors du chargement des produits.';
+            data['message'] ?? loc.stockAddOutLoadError;
       }
     } catch (e) {
-      _errorMessage = 'Erreur de connexion : $e';
+      final loc = AppLocalizations.of(context);
+      _errorMessage = loc.stockAddOutConnectionError(e.toString());
     } finally {
       setState(() => _isLoading = false);
     }
@@ -111,19 +114,20 @@ class _NewSalePageState extends State<NewSalePage> {
           return null;
         }
       } else {
+        final loc = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                'Erreur serveur (${response.statusCode}) lors de la création du client.'),
+            content: Text(loc.stockAddOutServerError(response.statusCode)),
             backgroundColor: Colors.red,
           ),
         );
       }
       return null;
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erreur de connexion lors de la création du client : $e'),
+          content: Text(loc.stockAddOutClientConnectionError(e.toString())),
           backgroundColor: Colors.red,
         ),
       );
@@ -137,8 +141,9 @@ class _NewSalePageState extends State<NewSalePage> {
       if (_cart[product.id]!['quantity'] < product.quantity) {
         _cart[product.id]!['quantity'] += 1;
       } else {
+        final loc = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Pas assez de stock pour ${product.name}.'),
+            content: Text(loc.stockAddOutInsufficientStock(product.name)),
             backgroundColor: Colors.orange));
       }
     } else {
@@ -171,16 +176,17 @@ class _NewSalePageState extends State<NewSalePage> {
 
   // --- Sale Submission to API ---
   Future<void> _recordSale() async {
+    final loc = AppLocalizations.of(context);
     if (_cart.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Le panier est vide.'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(loc.stockAddOutEmptyCart), backgroundColor: Colors.red));
       return;
     }
 
     final clientName = _clientNameController.text.trim();
     if (clientName.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Veuillez entrer le nom du client.'),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(loc.stockAddOutEnterClient),
           backgroundColor: Colors.red));
       return;
     }
@@ -199,8 +205,9 @@ class _NewSalePageState extends State<NewSalePage> {
         clientId = await _addNewClient(clientName);
         if (clientId == null) {
           setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('Erreur lors de l\'ajout du nouveau client.'),
+          final loc = AppLocalizations.of(context);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(loc.stockAddOutAddClientError),
               backgroundColor: Colors.red));
           return;
         }
@@ -232,9 +239,10 @@ class _NewSalePageState extends State<NewSalePage> {
 
       final data = json.decode(response.body);
 
+      final loc = AppLocalizations.of(context);
       if (response.statusCode == 200 && data['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Vente enregistrée avec succès !'),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(loc.stockAddOutSuccess),
             backgroundColor: Colors.green));
         // Reset the page
         _cart.clear();
@@ -252,12 +260,13 @@ class _NewSalePageState extends State<NewSalePage> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Erreur: ${data['message']}'),
+            content: Text(loc.stockAddOutError(data['message'] ?? '')),
             backgroundColor: Colors.red));
       }
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Erreur de connexion : $e'),
+          content: Text(loc.stockAddOutConnectionErrorSale(e.toString())),
           backgroundColor: Colors.red));
     } finally {
       setState(() => _isLoading = false);
@@ -265,21 +274,21 @@ class _NewSalePageState extends State<NewSalePage> {
   }
 
   Future<bool?> _showAddClientDialog(String clientName) {
+    final loc = AppLocalizations.of(context);
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Client non trouvé'),
-        content: Text(
-            'Le client "$clientName" n\'existe pas. Voulez-vous l\'ajouter ?'),
+        title: Text(loc.stockAddOutClientNotFound),
+        content: Text(loc.stockAddOutClientNotFoundMessage(clientName)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Annuler', style: TextStyle(color: Colors.red)),
+            child: Text(loc.stockAddOutCancel, style: const TextStyle(color: Colors.red)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text('Ajouter', style: TextStyle(color: Colors.white)),
+            child: Text(loc.stockAddOutAdd, style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -289,10 +298,11 @@ class _NewSalePageState extends State<NewSalePage> {
   // --- UI Widgets ---
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nouvelle Vente',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text(loc.stockAddOutTitle,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.blueGrey[800],
         elevation: 4,
       ),
@@ -310,7 +320,7 @@ class _NewSalePageState extends State<NewSalePage> {
                       TextField(
                         controller: _clientNameController,
                         decoration: InputDecoration(
-                          labelText: 'Nom du client',
+                          labelText: loc.stockAddOutClientNameLabel,
                           prefixIcon: const Icon(Icons.person),
                           border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12)),
@@ -332,7 +342,7 @@ class _NewSalePageState extends State<NewSalePage> {
                           });
                         },
                         decoration: InputDecoration(
-                          hintText: 'Rechercher un produit...',
+                          hintText: loc.stockAddOutSearchProduct,
                           prefixIcon: const Icon(Icons.search),
                           border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12)),
@@ -342,8 +352,8 @@ class _NewSalePageState extends State<NewSalePage> {
                       // List of available products to add
                       Expanded(
                         child: _filteredProducts.isEmpty
-                            ? const Center(
-                                child: Text('Aucun produit disponible.'))
+                            ? Center(
+                                child: Text(loc.stockAddOutNoProducts))
                             : ListView.builder(
                                 itemCount: _filteredProducts.length,
                                 itemBuilder: (context, index) {
@@ -351,8 +361,9 @@ class _NewSalePageState extends State<NewSalePage> {
                                   return ListTile(
                                     leading: const Icon(Icons.shopping_bag),
                                     title: Text(product.name),
-                                    subtitle: Text(
-                                        '${product.prixVente.toStringAsFixed(2)} \$ - Stock: ${product.quantity}'),
+                                    subtitle: Text(loc.stockAddOutProductSubtitle(
+                                        product.prixVente.toStringAsFixed(2),
+                                        product.quantity.toString())),
                                     trailing: IconButton(
                                       icon: const Icon(Icons.add_shopping_cart,
                                           color: Colors.green),
@@ -372,9 +383,9 @@ class _NewSalePageState extends State<NewSalePage> {
                         child: ElevatedButton.icon(
                           onPressed: _recordSale,
                           icon: const Icon(Icons.check, color: Colors.white),
-                          label: const Text('Valider la vente',
+                          label: Text(loc.stockAddOutValidateSale,
                               style:
-                                  TextStyle(color: Colors.white, fontSize: 18)),
+                                  const TextStyle(color: Colors.white, fontSize: 18)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
                             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -391,22 +402,23 @@ class _NewSalePageState extends State<NewSalePage> {
 
   // Cart summary widget
   Widget _buildCartSummary() {
+    final loc = AppLocalizations.of(context);
     if (_cart.isEmpty) {
       return const SizedBox.shrink(); // Hide if cart is empty
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Panier',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        Text(loc.stockAddOutCart,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         const Divider(),
         ..._cart.entries.map((entry) {
           final product = entry.value['product'] as Product;
           final quantity = entry.value['quantity'] as int;
           return ListTile(
             title: Text(product.name),
-            subtitle: Text(
-                'Quantité: $quantity x ${product.prixVente.toStringAsFixed(2)} \$'),
+            subtitle: Text(loc.stockAddOutQuantityLabel(
+                quantity.toString(), product.prixVente.toStringAsFixed(2))),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -427,7 +439,7 @@ class _NewSalePageState extends State<NewSalePage> {
         Align(
           alignment: Alignment.centerRight,
           child: Text(
-            'Total: ${_cartTotal.toStringAsFixed(2)} \$',
+            loc.stockAddOutTotal(_cartTotal.toStringAsFixed(2)),
             style: const TextStyle(
                 fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green),
           ),

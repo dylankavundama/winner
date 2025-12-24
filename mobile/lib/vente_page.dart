@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:gestion_app_mobile/client_model.dart';
 import 'package:gestion_app_mobile/constants.dart';
+import 'package:gestion_app_mobile/app_localizations.dart';
 import 'package:gestion_app_mobile/product_model.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -76,7 +77,8 @@ class _VentePageState extends State<VentePage> {
         _fetchAllProducts(),
       ]);
     } catch (e) {
-      setState(() => _errorMessage = 'Erreur de chargement: ${e.toString()}');
+      final loc = AppLocalizations.of(context);
+      setState(() => _errorMessage = loc.venteLoadError(e.toString()));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -118,18 +120,21 @@ class _VentePageState extends State<VentePage> {
                 .toList();
           });
         } else {
+          final loc = AppLocalizations.of(context);
           setState(() {
-            _errorMessage = data['message'] ?? 'Erreur lors du chargement des produits';
+            _errorMessage = data['message'] ?? loc.venteErrorLoadingProducts;
           });
         }
       } else {
+        final loc = AppLocalizations.of(context);
         setState(() {
-          _errorMessage = 'Erreur serveur (${response.statusCode})';
+          _errorMessage = loc.venteErrorServer(response.statusCode);
         });
       }
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       setState(() {
-        _errorMessage = 'Erreur de connexion: ${e.toString()}';
+        _errorMessage = loc.venteErrorConnection(e.toString());
       });
     }
   }
@@ -213,11 +218,13 @@ class _VentePageState extends State<VentePage> {
           return null;
         }
       } else {
-        _showError('Erreur serveur (${response.statusCode}) lors de la création du client.');
+        final loc = AppLocalizations.of(context);
+        _showError(loc.venteErrorServerClient(response.statusCode));
       }
       return null;
     } catch (e) {
-      _showError('Erreur de connexion lors de la création du client : $e');
+      final loc = AppLocalizations.of(context);
+      _showError(loc.venteErrorConnectionClient(e.toString()));
       return null;
     }
   }
@@ -241,7 +248,8 @@ class _VentePageState extends State<VentePage> {
         _clientSearchController.clear();
         _nextPage();
       } else {
-        _showError('Erreur lors de la création du client');
+        final loc = AppLocalizations.of(context);
+        _showError(loc.venteErrorCreateClient);
       }
     } 
     // Sinon, vérifier qu'un client existant est sélectionné
@@ -250,22 +258,24 @@ class _VentePageState extends State<VentePage> {
     } 
     // Aucun client sélectionné
     else {
-      _showError('Veuillez sélectionner ou créer un client');
+      final loc = AppLocalizations.of(context);
+      _showError(loc.venteErrorSelectClient);
     }
   }
 
   // Méthode améliorée pour ajouter un produit (avec validation)
   void _addProduct(Product product) {
+    final loc = AppLocalizations.of(context);
     // Vérifier si le produit est déjà ajouté
     final isAlreadyAdded = _selectedProducts.any((p) => p.id == product.id);
     if (isAlreadyAdded) {
-      _showError('Ce produit est déjà dans la liste');
+      _showError(loc.venteErrorProductAlreadyAdded);
       return;
     }
     
     // Vérifier le stock
     if (product.quantity <= 0) {
-      _showError('Stock insuffisant pour ${product.name}');
+      _showError(loc.venteErrorInsufficientStock(product.name));
       return;
     }
     
@@ -280,18 +290,19 @@ class _VentePageState extends State<VentePage> {
       ));
     });
     
-    _showSuccess('${product.name} ajouté à la vente');
+    _showSuccess(loc.venteProductAddedToSale(product.name));
   }
 
   Future<void> _submitSale() async {
+    final loc = AppLocalizations.of(context);
     if (_selectedClient == null) {
-      _showError('Veuillez sélectionner un client');
+      _showError(loc.venteErrorSelectClientSale);
       _pageController.jumpToPage(0);
       return;
     }
 
     if (_selectedProducts.isEmpty) {
-      _showError('Veuillez sélectionner au moins un produit');
+      _showError(loc.venteErrorSelectProducts);
       return;
     }
 
@@ -326,8 +337,9 @@ class _VentePageState extends State<VentePage> {
         try {
           final responseData = jsonDecode(response.body);
           
+          final loc = AppLocalizations.of(context);
           if (responseData['success'] == true) {
-            _showSuccess(responseData['message'] ?? 'Vente enregistrée avec succès');
+            _showSuccess(responseData['message'] ?? loc.venteSaleRecorded);
             try {
               final saleId = int.tryParse(responseData['sale_id'].toString()) ?? 0;
               // Générer la facture automatiquement
@@ -335,42 +347,47 @@ class _VentePageState extends State<VentePage> {
               if (invoiceId != null) {
                 await _showSuccessDialog(invoiceId);
               } else {
-                _showError('Erreur lors de la génération de la facture');
+                _showError(loc.venteErrorGenerateInvoice);
               }
             } catch (e) {
               print('Erreur lors de la création de la facture: $e');
             }
           } else {
-            _showError(responseData['message'] ?? 'Erreur lors de la vente');
+            _showError(responseData['message'] ?? loc.venteErrorSale);
           }
         } on FormatException catch (e) {
           print('JSON parsing error: $e');
-          _showError('Erreur de format de réponse du serveur');
+          final loc = AppLocalizations.of(context);
+          _showError(loc.venteErrorServerResponse);
         }
       } else {
-        _showError('Erreur serveur (${response.statusCode})');
+        final loc = AppLocalizations.of(context);
+        _showError(loc.venteErrorServer(response.statusCode));
       }
     } on TimeoutException {
-      _showError('Timeout: Le serveur ne répond pas');
+      final loc = AppLocalizations.of(context);
+      _showError(loc.venteErrorTimeout);
     } catch (e) {
       print('Error in _submitSale: $e');
-      _showError('Erreur: ${e.toString()}');
+      final loc = AppLocalizations.of(context);
+      _showError(loc.venteErrorConnection(e.toString()));
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
   Future<void> _showSuccessDialog(int invoiceId) async {
+    final loc = AppLocalizations.of(context);
     await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.green, size: 28),
-              SizedBox(width: 8),
-              Expanded(child: Text('Vente enregistrée avec succès')),
+              const Icon(Icons.check_circle, color: Colors.green, size: 28),
+              const SizedBox(width: 8),
+              Expanded(child: Text(loc.venteSaleRecordedTitle)),
             ],
           ),
           content: SingleChildScrollView(
@@ -378,18 +395,18 @@ class _VentePageState extends State<VentePage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow(Icons.person, 'Client', _selectedClient?.name ?? ''),
+                _buildInfoRow(Icons.person, loc.venteInfoClient, _selectedClient?.name ?? ''),
                 const SizedBox(height: 8),
-                _buildInfoRow(Icons.attach_money, 'Total', '${_calculateTotal().toStringAsFixed(2)} \$'),
+                _buildInfoRow(Icons.attach_money, loc.venteInfoTotal, '${_calculateTotal().toStringAsFixed(2)} \$'),
                 const SizedBox(height: 8),
-                _buildInfoRow(Icons.calendar_today, 'Date', DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())),
+                _buildInfoRow(Icons.calendar_today, loc.venteInfoDate, DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())),
                 if (_imeiController.text.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  _buildInfoRow(Icons.phone_android, 'IMEI', _imeiController.text),
+                  _buildInfoRow(Icons.phone_android, loc.venteInfoImei, _imeiController.text),
                 ],
                 if (_garantieController.text.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  _buildInfoRow(Icons.verified, 'Garantie', _garantieController.text),
+                  _buildInfoRow(Icons.verified, loc.venteInfoWarranty, _garantieController.text),
                 ],
               ],
             ),
@@ -400,11 +417,11 @@ class _VentePageState extends State<VentePage> {
                 Navigator.of(context).pop();
                 Navigator.of(context).pop(); // Retour à la page précédente
               },
-              child: const Text('Fermer'),
+              child: Text(loc.venteClose),
             ),
             ElevatedButton.icon(
               icon: const Icon(Icons.print),
-              label: const Text('Imprimer la facture'),
+              label: Text(loc.ventePrintInvoice),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blueGrey[800],
                 foregroundColor: Colors.white,
@@ -477,12 +494,13 @@ class _VentePageState extends State<VentePage> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       // Empêche le redimensionnement automatique du corps quand le clavier apparaît,
       // ce qui évite les erreurs d'overflow lors de la saisie du nom des produits.
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text('Nouvelle Vente'),
+        title: Text(loc.venteTitle),
         backgroundColor: Colors.blueGrey[800],
         elevation: 2,
       ),
@@ -503,7 +521,7 @@ class _VentePageState extends State<VentePage> {
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: _loadInitialData,
-                        child: const Text('Réessayer'),
+                        child: Text(loc.venteRetry),
                       ),
                     ],
                   ),
@@ -532,6 +550,7 @@ class _VentePageState extends State<VentePage> {
   }
 
   Widget _buildProgressIndicator() {
+    final loc = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -546,10 +565,10 @@ class _VentePageState extends State<VentePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildStepIndicator(0, 'Client', _currentPage >= 0),
-              _buildStepIndicator(1, 'Adresse', _currentPage >= 1),
-              _buildStepIndicator(2, 'Garantie', _currentPage >= 2),
-              _buildStepIndicator(3, 'Produits', _currentPage >= 3),
+              _buildStepIndicator(0, loc.venteStepClient, _currentPage >= 0),
+              _buildStepIndicator(1, loc.venteStepAddress, _currentPage >= 1),
+              _buildStepIndicator(2, loc.venteStepWarranty, _currentPage >= 2),
+              _buildStepIndicator(3, loc.venteStepProducts, _currentPage >= 3),
             ],
           ),
         ],
@@ -596,6 +615,7 @@ class _VentePageState extends State<VentePage> {
   }
 
   Widget _buildClientInfoPage() {
+    final loc = AppLocalizations.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -605,9 +625,9 @@ class _VentePageState extends State<VentePage> {
             children: [
               Icon(Icons.person, color: Colors.blueGrey[800], size: 28),
               const SizedBox(width: 8),
-              const Text(
-                'Informations Client',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              Text(
+                loc.venteClientInfoTitle,
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -622,9 +642,9 @@ class _VentePageState extends State<VentePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Rechercher un client existant',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  Text(
+                    loc.venteSearchExistingClient,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 12),
                   TypeAheadField<Client>(
@@ -633,8 +653,8 @@ class _VentePageState extends State<VentePage> {
                         controller: controller,
                         focusNode: focusNode,
                         decoration: InputDecoration(
-                          labelText: 'Rechercher un client',
-                          hintText: 'Tapez le nom du client...',
+                          labelText: loc.venteSearchClientLabel,
+                          hintText: loc.venteSearchClientHint,
                           prefixIcon: const Icon(Icons.search),
                           suffixIcon: _selectedClient != null
                               ? IconButton(
@@ -681,8 +701,8 @@ class _VentePageState extends State<VentePage> {
                         padding: const EdgeInsets.all(16.0),
                         child: Text(
                           _clients.isEmpty
-                              ? 'Aucun client enregistré'
-                              : 'Aucun client trouvé',
+                              ? loc.venteNoClientsRegistered
+                              : loc.venteNoClientFound,
                           style: TextStyle(color: Colors.grey[600]),
                         ),
                       );
@@ -703,7 +723,7 @@ class _VentePageState extends State<VentePage> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Client sélectionné: ${_selectedClient!.name}',
+                              loc.venteClientSelected(_selectedClient!.name),
                               style: TextStyle(
                                 color: Colors.green[900],
                                 fontWeight: FontWeight.w500,
@@ -728,7 +748,7 @@ class _VentePageState extends State<VentePage> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  'OU',
+                  loc.venteOr,
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontWeight: FontWeight.bold,
@@ -754,9 +774,9 @@ class _VentePageState extends State<VentePage> {
                     children: [
                       Icon(Icons.person_add, color: Colors.blue[700], size: 20),
                       const SizedBox(width: 8),
-                      const Text(
-                        'Créer un nouveau client',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      Text(
+                        loc.venteCreateNewClient,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
@@ -764,8 +784,8 @@ class _VentePageState extends State<VentePage> {
                   TextFormField(
                     controller: _clientNameController,
                     decoration: InputDecoration(
-                      labelText: 'Nom du nouveau client *',
-                      hintText: 'Entrez le nom du client',
+                      labelText: loc.venteNewClientNameLabel,
+                      hintText: loc.venteNewClientNameHint,
                       prefixIcon: const Icon(Icons.person_outline),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -785,7 +805,7 @@ class _VentePageState extends State<VentePage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '* Champs obligatoires',
+                    loc.venteRequiredFields,
                     style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
@@ -805,7 +825,7 @@ class _VentePageState extends State<VentePage> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Aucun client enregistré. Créez un nouveau client pour continuer.',
+                        loc.venteNoClientsInfo,
                         style: TextStyle(color: Colors.blue[900]),
                       ),
                     ),
@@ -820,6 +840,7 @@ class _VentePageState extends State<VentePage> {
   }
 
   Widget _buildAddressPage() {
+    final loc = AppLocalizations.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -829,9 +850,9 @@ class _VentePageState extends State<VentePage> {
             children: [
               Icon(Icons.location_on, color: Colors.blueGrey[800], size: 28),
               const SizedBox(width: 8),
-              const Text(
-                'Adresse et Informations',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              Text(
+                loc.venteAddressTitle,
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -846,8 +867,8 @@ class _VentePageState extends State<VentePage> {
                   TextFormField(
                     controller: _clientAddressController,
                     decoration: InputDecoration(
-                      labelText: 'Adresse',
-                      hintText: 'Adresse du client (optionnel)',
+                      labelText: loc.venteAddressLabel,
+                      hintText: loc.venteAddressHint,
                       prefixIcon: const Icon(Icons.home),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -866,8 +887,8 @@ class _VentePageState extends State<VentePage> {
                   TextFormField(
                     controller: _imeiController,
                     decoration: InputDecoration(
-                      labelText: 'IMEI',
-                      hintText: 'Numéro IMEI (optionnel)',
+                      labelText: loc.venteImeiLabel,
+                      hintText: loc.venteImeiHint,
                       prefixIcon: const Icon(Icons.phone_android),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -892,6 +913,7 @@ class _VentePageState extends State<VentePage> {
   }
 
   Widget _buildWarrantyPage() {
+    final loc = AppLocalizations.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -901,9 +923,9 @@ class _VentePageState extends State<VentePage> {
             children: [
               Icon(Icons.verified, color: Colors.blueGrey[800], size: 28),
               const SizedBox(width: 8),
-              const Text(
-                'Garantie',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              Text(
+                loc.venteWarrantyTitle,
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -919,8 +941,8 @@ class _VentePageState extends State<VentePage> {
                   TextFormField(
                     controller: _garantieController,
                     decoration: InputDecoration(
-                      labelText: 'Durée de garantie',
-                      hintText: 'Ex: 6 mois, 1 an, 2 ans...',
+                      labelText: loc.venteWarrantyLabel,
+                      hintText: loc.venteWarrantyHint,
                       prefixIcon: const Icon(Icons.verified_user),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -942,7 +964,7 @@ class _VentePageState extends State<VentePage> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'La garantie est optionnelle. Vous pouvez laisser ce champ vide.',
+                            loc.venteWarrantyOptional,
                             style: TextStyle(color: Colors.blue[900], fontSize: 12),
                           ),
                         ),
@@ -960,6 +982,7 @@ class _VentePageState extends State<VentePage> {
 
   // Widget de recherche de produits amélioré
   Widget _buildProductSearchWidget() {
+    final loc = AppLocalizations.of(context);
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -972,8 +995,8 @@ class _VentePageState extends State<VentePage> {
             TextFormField(
               controller: _productSearchController,
               decoration: InputDecoration(
-                labelText: 'Rechercher un produit',
-                hintText: 'Tapez le nom ou l\'ID du produit...',
+                labelText: loc.venteSearchProductLabel,
+                hintText: loc.venteSearchProductHint,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _productSearchController.text.isNotEmpty
                     ? IconButton(
@@ -1011,7 +1034,7 @@ class _VentePageState extends State<VentePage> {
                           padding: const EdgeInsets.all(16.0),
                           child: Center(
                             child: Text(
-                              'Aucun produit trouvé',
+                              loc.venteNoProductFound,
                               style: TextStyle(color: Colors.grey[600]),
                             ),
                           ),
@@ -1070,11 +1093,11 @@ class _VentePageState extends State<VentePage> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      'Stock: ${product.quantity}',
+                                      loc.venteStockLabel(product.quantity.toString()),
                                       style: const TextStyle(fontSize: 12),
                                     ),
                                     Text(
-                                      'Prix: ${product.prixVente.toStringAsFixed(2)} \$',
+                                      loc.ventePriceLabel(product.prixVente.toStringAsFixed(2)),
                                       style: TextStyle(
                                         color: Colors.green[700],
                                         fontWeight: FontWeight.bold,
@@ -1084,11 +1107,11 @@ class _VentePageState extends State<VentePage> {
                                   ],
                                 ),
                                 trailing: isAlreadyAdded
-                                    ? const Chip(
-                                        label: Text('Ajouté', style: TextStyle(fontSize: 10)),
+                                    ? Chip(
+                                        label: Text(loc.venteProductAdded, style: const TextStyle(fontSize: 10)),
                                         backgroundColor: Colors.green,
-                                        labelStyle: TextStyle(color: Colors.white),
-                                        padding: EdgeInsets.symmetric(horizontal: 4),
+                                        labelStyle: const TextStyle(color: Colors.white),
+                                        padding: const EdgeInsets.symmetric(horizontal: 4),
                                       )
                                     : product.quantity > 0
                                         ? IconButton(
@@ -1099,11 +1122,11 @@ class _VentePageState extends State<VentePage> {
                                               _filterProducts('');
                                             },
                                           )
-                                        : const Chip(
-                                            label: Text('Rupture', style: TextStyle(fontSize: 10)),
+                                        : Chip(
+                                            label: Text(loc.venteProductOutOfStock, style: const TextStyle(fontSize: 10)),
                                             backgroundColor: Colors.red,
-                                            labelStyle: TextStyle(color: Colors.white),
-                                            padding: EdgeInsets.symmetric(horizontal: 4),
+                                            labelStyle: const TextStyle(color: Colors.white),
+                                            padding: const EdgeInsets.symmetric(horizontal: 4),
                                           ),
                                 enabled: !isAlreadyAdded && product.quantity > 0,
                               ),
@@ -1117,7 +1140,7 @@ class _VentePageState extends State<VentePage> {
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Text(
-                    'Affichage des 20 premiers résultats. Affinez votre recherche pour plus de résultats.',
+                    loc.venteSearchLimitMessage,
                     style: TextStyle(
                       fontSize: 11,
                       color: Colors.grey[600],
@@ -1134,6 +1157,7 @@ class _VentePageState extends State<VentePage> {
   }
 
   Widget _buildProductSelectionPage() {
+    final loc = AppLocalizations.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         return Padding(
@@ -1145,9 +1169,9 @@ class _VentePageState extends State<VentePage> {
                 children: [
                   Icon(Icons.shopping_cart, color: Colors.blueGrey[800], size: 28),
                   const SizedBox(width: 8),
-                  const Text(
-                    'Produits à Vendre',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  Text(
+                    loc.venteProductsTitle,
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -1174,7 +1198,7 @@ class _VentePageState extends State<VentePage> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Produits sélectionnés',
+                                loc.venteSelectedProducts,
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.blueGrey[800],
@@ -1227,7 +1251,7 @@ class _VentePageState extends State<VentePage> {
                                               children: [
                                                 if (product.priceOverride != product.prixVente) ...[
                                                   Text(
-                                                    'Prix original: ${_currencyFormatter.format(product.prixVente)}',
+                                                    loc.venteOriginalPrice(_currencyFormatter.format(product.prixVente)),
                                                     style: TextStyle(
                                                       fontSize: 11,
                                                       color: Colors.grey[600],
@@ -1239,7 +1263,7 @@ class _VentePageState extends State<VentePage> {
                                                 Row(
                                                   children: [
                                                     Text(
-                                                      'Prix: ${_currencyFormatter.format(product.priceOverride)}',
+                                                      loc.ventePrice(_currencyFormatter.format(product.priceOverride)),
                                                       style: TextStyle(
                                                         color: product.priceOverride < product.prixVente
                                                             ? Colors.orange[700]
@@ -1278,7 +1302,7 @@ class _VentePageState extends State<VentePage> {
                                               color: Colors.blue[700],
                                             ),
                                             onPressed: () => _showEditPriceDialog(product),
-                                            tooltip: 'Modifier le prix',
+                                            tooltip: loc.venteEditPriceTooltip,
                                           ),
                                         ],
                                       ),
@@ -1320,7 +1344,7 @@ class _VentePageState extends State<VentePage> {
                                       IconButton(
                                         icon: const Icon(Icons.delete, color: Colors.red),
                                         onPressed: () => _removeProduct(product.id),
-                                        tooltip: 'Supprimer',
+                                        tooltip: loc.venteDeleteTooltip,
                                       ),
                                     ],
                                   ),
@@ -1344,9 +1368,9 @@ class _VentePageState extends State<VentePage> {
                                 children: [
                                   Icon(Icons.attach_money, color: Colors.green[700]),
                                   const SizedBox(width: 8),
-                                  const Text(
-                                    'Total:',
-                                    style: TextStyle(
+                                  Text(
+                                    loc.venteTotal,
+                                    style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -1377,7 +1401,7 @@ class _VentePageState extends State<VentePage> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'Aucun produit sélectionné',
+                            loc.venteNoProductsSelected,
                             style: TextStyle(
                               fontSize: 18,
                               color: Colors.grey[600],
@@ -1386,7 +1410,7 @@ class _VentePageState extends State<VentePage> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Utilisez la barre de recherche ci-dessus\npour ajouter des produits à la vente',
+                            loc.venteNoProductsHint,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 14,
@@ -1405,6 +1429,7 @@ class _VentePageState extends State<VentePage> {
   }
 
   Widget _buildNavigationButtons() {
+    final loc = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
@@ -1425,7 +1450,7 @@ class _VentePageState extends State<VentePage> {
             Expanded(
               child: OutlinedButton.icon(
                 icon: const Icon(Icons.arrow_back),
-                label: const Text('Précédent'),
+                label: Text(loc.ventePrevious),
                 onPressed: _previousPage,
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1437,7 +1462,7 @@ class _VentePageState extends State<VentePage> {
             Expanded(
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.arrow_forward),
-                label: const Text('Suivant'),
+                label: Text(loc.venteNext),
                 onPressed: () {
                   if (_currentPage == 0) {
                     _handleNextClientStep();
@@ -1465,7 +1490,7 @@ class _VentePageState extends State<VentePage> {
                         ),
                       )
                     : const Icon(Icons.check),
-                label: Text(_isLoading ? 'Enregistrement...' : 'Terminer la vente'),
+                label: Text(_isLoading ? loc.venteSaving : loc.venteFinishSale),
                 onPressed: _isLoading ? null : _submitSale,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
@@ -1487,20 +1512,23 @@ class _VentePageState extends State<VentePage> {
       } else if (newQuantity == 0) {
         _selectedProducts.removeWhere((p) => p.id == productId);
       } else if (newQuantity > product.quantity) {
-        _showError('Quantité maximale disponible: ${product.quantity}');
+        final loc = AppLocalizations.of(context);
+        _showError(loc.venteMaxQuantity(product.quantity.toString()));
       }
     });
   }
 
   void _removeProduct(int productId) {
+    final loc = AppLocalizations.of(context);
     setState(() {
       _selectedProducts.removeWhere((p) => p.id == productId);
     });
-    _showSuccess('Produit retiré de la vente');
+    _showSuccess(loc.venteProductRemoved);
   }
 
   // Afficher le dialogue pour modifier le prix
   Future<void> _showEditPriceDialog(SaleProduct product) async {
+    final loc = AppLocalizations.of(context);
     final TextEditingController priceController = TextEditingController(
       text: product.priceOverride.toStringAsFixed(2),
     );
@@ -1518,7 +1546,7 @@ class _VentePageState extends State<VentePage> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Modifier le prix',
+                  loc.venteModifyPrice,
                   style: TextStyle(fontSize: 18),
                 ),
               ),
@@ -1540,7 +1568,7 @@ class _VentePageState extends State<VentePage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Prix original: ${_currencyFormatter.format(product.prixVente)}',
+                    loc.venteOriginalPrice(_currencyFormatter.format(product.prixVente)),
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: 14,
@@ -1550,8 +1578,8 @@ class _VentePageState extends State<VentePage> {
                   TextFormField(
                     controller: priceController,
                     decoration: InputDecoration(
-                      labelText: 'Nouveau prix',
-                      hintText: 'Entrez le nouveau prix',
+                      labelText: loc.venteNewPriceLabel,
+                      hintText: loc.venteNewPriceHint,
                       prefixIcon: const Icon(Icons.attach_money),
                       suffixText: '\$',
                       border: OutlineInputBorder(
@@ -1566,17 +1594,17 @@ class _VentePageState extends State<VentePage> {
                     },
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Le prix est obligatoire';
+                        return loc.ventePriceRequired;
                       }
                       final price = double.tryParse(value);
                       if (price == null) {
-                        return 'Veuillez entrer un nombre valide';
+                        return loc.ventePriceInvalid;
                       }
                       if (price < 0) {
-                        return 'Le prix ne peut pas être négatif';
+                        return loc.ventePriceNegative;
                       }
                       if (price > product.prixVente * 2) {
-                        return 'Le prix semble trop élevé';
+                        return loc.ventePriceTooHigh;
                       }
                       return null;
                     },
@@ -1606,14 +1634,14 @@ class _VentePageState extends State<VentePage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Réduction: ${_currencyFormatter.format(reduction)}',
+                                      loc.venteReduction(_currencyFormatter.format(reduction)),
                                       style: TextStyle(
                                         color: Colors.orange[900],
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     Text(
-                                      '${percentage.toStringAsFixed(1)}% de réduction',
+                                      loc.venteReductionPercent(percentage.toStringAsFixed(1)),
                                       style: TextStyle(
                                         color: Colors.orange[700],
                                         fontSize: 12,
@@ -1644,14 +1672,14 @@ class _VentePageState extends State<VentePage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Augmentation: ${_currencyFormatter.format(augmentation)}',
+                                      loc.venteIncrease(_currencyFormatter.format(augmentation)),
                                       style: TextStyle(
                                         color: Colors.blue[900],
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     Text(
-                                      '+${percentage.toStringAsFixed(1)}%',
+                                      loc.venteIncreasePercent(percentage.toStringAsFixed(1)),
                                       style: TextStyle(
                                         color: Colors.blue[700],
                                         fontSize: 12,
@@ -1674,7 +1702,7 @@ class _VentePageState extends State<VentePage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Annuler'),
+              child: Text(loc.venteCancel),
             ),
             TextButton(
               onPressed: () {
@@ -1683,7 +1711,7 @@ class _VentePageState extends State<VentePage> {
                 setDialogState(() {}); // Mettre à jour l'affichage
               },
               child: Text(
-                'Réinitialiser',
+                loc.venteReset,
                 style: TextStyle(color: Colors.grey[600]),
               ),
             ),
@@ -1695,13 +1723,13 @@ class _VentePageState extends State<VentePage> {
                     product.priceOverride = newPrice;
                   });
                   Navigator.of(dialogContext).pop();
-                  _showSuccess('Prix modifié avec succès');
+                  _showSuccess(loc.ventePriceModified);
                 }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue[700],
               ),
-              child: const Text('Enregistrer'),
+              child: Text(loc.venteSave),
             ),
           ],
             );
