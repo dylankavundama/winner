@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:gestion_app_mobile/constants.dart';
+import 'package:gestion_app_mobile/error_utils.dart';
 import 'package:sunmi_printer_plus/enums.dart';
 
 import 'package:sunmi_printer_plus/sunmi_printer_plus.dart';
@@ -58,7 +59,7 @@ class _FacturePageState extends State<FacturePage> {
       }
     } catch (e) {
       setState(() {
-        errorMessage = 'Erreur de connexion: $e';
+        errorMessage = 'Erreur de connexion: ${ErrorUtils.getUserFriendlyError(e)}';
         isLoading = false;
       });
     }
@@ -96,7 +97,6 @@ class _FacturePageState extends State<FacturePage> {
     final date = invoice!['sale_date'];
     final status = invoice!['status'] ?? 'Non payée';
     final imei = invoice!['imei'] ?? '';
-    final garanti = invoice!['garanti'] ?? '';
     final formatter = NumberFormat.currency(locale: 'fr_FR', symbol: '\$');
 
     return Center(
@@ -379,7 +379,6 @@ class _FacturePageState extends State<FacturePage> {
     final status = invoice!['status'] ?? 'Non payée';
     final date = invoice!['sale_date'];
     final imei = invoice!['imei'] ?? '';
-    final garanti = invoice!['garanti'] ?? '';
 
     try {
       // Vérifier la connexion à l'imprimante Sunmi

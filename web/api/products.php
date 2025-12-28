@@ -4,36 +4,15 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET");
 header("Access-Control-Allow-Headers: Content-Type");
 
-// Configuration de la base de données
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'winnerco_db');
-define('DB_USER', 'winnerco_admin');
-define('DB_PASSWORD', 'VY@LS?Z)_,V5');
-
-// Fonction de connexion à la base de données
-function getDbConnection() {
-    try {
-        $conn = new PDO(
-            "mysql:host=".DB_HOST.";dbname=".DB_NAME.";charset=utf8mb4", 
-            DB_USER, 
-            DB_PASSWORD
-        );
-        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        return $conn;
-    } catch(PDOException $e) {
-        die(json_encode([
-            'success' => false,
-            'message' => 'Erreur de connexion à la base de données'
-        ]));
-    }
-}
+// Utiliser le fichier de configuration partagé
+require_once '../config/db.php';
 
 // Récupérer tous les products
 function getAllProducts() {
-    $conn = getDbConnection();
+    global $pdo;
     
     try {
-        $stmt = $conn->query("
+        $stmt = $pdo->query("
             SELECT 
                 id,
                 name,
@@ -64,10 +43,10 @@ function getAllProducts() {
 
 // Récupérer un produit par ID
 function getProductById($id) {
-    $conn = getDbConnection();
+    global $pdo;
     
     try {
-        $stmt = $conn->prepare("
+        $stmt = $pdo->prepare("
             SELECT 
                 id,
                 name,

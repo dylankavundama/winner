@@ -12,7 +12,10 @@ $total_sales = $pdo->query('SELECT COUNT(*) FROM sales')->fetchColumn();
 $total_invoices = $pdo->query('SELECT COUNT(*) FROM invoices')->fetchColumn();
 $total_sales_amount = $pdo->query('SELECT IFNULL(SUM(total),0) FROM sales')->fetchColumn();
 $total_chiffre_affaire = $pdo->query('SELECT IFNULL(SUM(total),0) FROM sales')->fetchColumn();
-$total_deposits = $pdo->query('SELECT IFNULL(SUM(amount),0) FROM deposits')->fetchColumn();
+$total_deposits = $pdo->query('SELECT IFNULL(SUM(amount),0) FROM deposits WHERE sale_id IS NULL')->fetchColumn();
+$total_sorties = $pdo->query('SELECT IFNULL(SUM(montant),0) FROM sorties')->fetchColumn();
+// Calcul du total de la caisse : (Ventes + Dépôts non utilisés) - Sorties
+$total_caisse = ($total_sales_amount + $total_deposits) - $total_sorties;
 // Pour le graphique : ventes par mois
 $chart_data = $pdo->query("SELECT DATE_FORMAT(sale_date, '%b') as month, SUM(total) as total FROM sales GROUP BY month ORDER BY MIN(sale_date)")->fetchAll();
 $months = [];
@@ -83,6 +86,7 @@ foreach ($chart_data as $row) {
             <a href="invoices.php"><i class="bi bi-receipt"></i> Factures</a>
             <a href="clients.php"><i class="bi bi-people"></i> Clients</a>
             <a href="reports.php"><i class="bi bi-bar-chart"></i> Rapports</a>
+            <a href="chiffre_affaire.php"><i class="bi bi-cash-stack"></i> Chiffre d'affaire</a>
             <a href="stock.php"><i class="bi bi-archive"></i> Stock</a>
             <a href="deposits.php"><i class="bi bi-piggy-bank"></i> Deposits</a>
             <a href="benefice.php"><i class="bi bi-cash-coin"></i> Bénéfice</a>
@@ -142,6 +146,13 @@ foreach ($chart_data as $row) {
                     <div>
                         <div class="value"><?= number_format($total_deposits,2) ?> $</div>
                         <div class="label">Total dépôts</div>
+                    </div>
+                </div>
+                <div class="dashboard-card bg-success" style="background: #28a745 !important;">
+                    <span class="icon"><i class="bi bi-safe"></i></span>
+                    <div>
+                        <div class="value"><?= number_format($total_caisse,2) ?> $</div>
+                        <div class="label">Total caisse</div>
                     </div>
                 </div>
             </div>

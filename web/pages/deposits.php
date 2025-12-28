@@ -11,14 +11,14 @@ $clientId = isset($_GET['client_id']) ? (int)$_GET['client_id'] : 0;
 // Récupérer la liste des clients pour le filtre
 $clients = $pdo->query('SELECT id, name FROM clients ORDER BY name')->fetchAll();
 
-// Récupérer les dépôts (optionnellement filtrés par client)
+// Récupérer les dépôts (optionnellement filtrés par client) - exclure les dépôts utilisés
 if ($clientId > 0) {
     $stmt = $pdo->prepare(
         'SELECT d.*, c.name AS client_name, p.name AS product_name
          FROM deposits d
          LEFT JOIN clients c ON d.client_id = c.id
          LEFT JOIN products p ON d.product_id = p.id
-         WHERE d.client_id = :client_id
+         WHERE d.client_id = :client_id AND d.sale_id IS NULL
          ORDER BY d.deposit_date DESC, d.id DESC'
     );
     $stmt->execute([':client_id' => $clientId]);
@@ -28,6 +28,7 @@ if ($clientId > 0) {
          FROM deposits d
          LEFT JOIN clients c ON d.client_id = c.id
          LEFT JOIN products p ON d.product_id = p.id
+         WHERE d.sale_id IS NULL
          ORDER BY d.deposit_date DESC, d.id DESC'
     );
 }

@@ -3,6 +3,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:gestion_app_mobile/constants.dart';
 import 'package:gestion_app_mobile/app_localizations.dart';
+import 'package:gestion_app_mobile/error_utils.dart';
+import 'package:gestion_app_mobile/facture_page.dart';
 import 'package:intl/intl.dart';
 
 class DetailSalePage extends StatefulWidget {
@@ -17,6 +19,7 @@ class _DetailSalePageState extends State<DetailSalePage> {
   Map<String, dynamic>? sale;
   bool isLoading = true;
   String? errorMessage;
+  bool _isGeneratingInvoice = false;
 
   @override
   void initState() {
@@ -55,7 +58,7 @@ class _DetailSalePageState extends State<DetailSalePage> {
     } catch (e) {
       final loc = AppLocalizations.of(context);
       setState(() {
-        errorMessage = loc.detailSaleConnectionError(e.toString());
+        errorMessage = loc.detailSaleConnectionError(ErrorUtils.getUserFriendlyError(e));
         isLoading = false;
       });
     }
@@ -181,10 +184,110 @@ class _DetailSalePageState extends State<DetailSalePage> {
                   ),
                 ],
               ),
+              const SizedBox(height: 30),
+              // Bouton pour générer et imprimer la facture
+              ElevatedButton.icon(
+                onPressed: _isGeneratingInvoice ? null : _generateAndShowInvoice,
+                icon: _isGeneratingInvoice
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.receipt_long),
+                label: Text(_isGeneratingInvoice ? 'Génération...' : 'Générer et Imprimer la Facture'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green[700],
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _generateAndShowInvoice() async {
+    if (sale == null) return;
+
+    setState(() {
+      _isGeneratingInvoice = true;
+    });
+
+    try {
+      // Générer ou récupérer la facture
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/add_invoice.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'sale_id': widget.saleId}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true && data['invoice_id'] != null) {
+          final invoiceId = data['invoice_id'] as int;
+          final alreadyExists = data['already_exists'] == true;
+
+          if (mounted) {
+            // Afficher un message de succès
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(alreadyExists
+                    ? 'Facture existante récupérée'
+                    : 'Facture générée avec succès'),
+                backgroundColor: Colors.green,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+
+            // Naviguer vers la page de facture
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => FacturePage(invoiceId: invoiceId),
+              ),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(data['message'] ?? 'Erreur lors de la génération de la facture'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Erreur serveur lors de la génération de la facture'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur de connexion: ${ErrorUtils.getUserFriendlyError(e)}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGeneratingInvoice = false;
+        });
+      }
+    }
   }
 } 

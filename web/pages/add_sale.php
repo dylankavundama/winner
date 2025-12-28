@@ -141,10 +141,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $stmt_detail = $pdo->prepare('INSERT INTO sale_details (sale_id, product_id, quantity, price) VALUES (?, ?, ?, ?)');
             $stmt_update_stock = $pdo->prepare('UPDATE products SET quantity = quantity - ? WHERE id = ?');
+            $stmt_update_deposits = $pdo->prepare('UPDATE deposits SET sale_id = ? WHERE client_id = ? AND product_id = ? AND sale_id IS NULL');
 
             foreach ($vente as $v) {
                 $stmt_detail->execute([$sale_id, $v['id'], $v['qte'], $v['price']]);
                 $stmt_update_stock->execute([$v['qte'], $v['id']]);
+                // Marquer les dépôts pour ce client et ce produit comme utilisés
+                $stmt_update_deposits->execute([$sale_id, $client_id, $v['id']]);
             }
             $pdo->commit();
             $message = 'Vente enregistrée avec succès!';

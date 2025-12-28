@@ -19,7 +19,11 @@ try {
     $total_sales_amount = $pdo->query('SELECT IFNULL(SUM(total),0) FROM sales')->fetchColumn();
     // Corrected "Chiffre d'affaire" if 'total' in sales is the revenue per sale
     $total_chiffre_affaire = $pdo->query('SELECT IFNULL(SUM(total),0) FROM sales')->fetchColumn(); // Assuming total_sales_amount IS chiffre d'affaire
-    $total_deposits = $pdo->query('SELECT IFNULL(SUM(amount),0) FROM deposits')->fetchColumn();
+    $total_deposits = $pdo->query('SELECT IFNULL(SUM(amount),0) FROM deposits WHERE sale_id IS NULL')->fetchColumn();
+    $total_sorties = $pdo->query('SELECT IFNULL(SUM(montant),0) FROM sorties')->fetchColumn();
+    
+    // Calcul du total de la caisse : (Ventes + Dépôts non utilisés) - Sorties
+    $total_caisse = ($total_sales_amount + $total_deposits) - $total_sorties;
 
     echo json_encode([
         'total_clients' => (int)$total_clients,
@@ -29,6 +33,8 @@ try {
         'total_sales_amount' => (double)$total_sales_amount,
         'total_chiffre_affaire' => (double)$total_chiffre_affaire,
         'total_deposits' => (double)$total_deposits,
+        'total_sorties' => (double)$total_sorties,
+        'total_caisse' => (double)$total_caisse,
         // You could also add the username here
         'username' => isset($_SESSION['username']) ? $_SESSION['username'] : 'Guest'
     ]);

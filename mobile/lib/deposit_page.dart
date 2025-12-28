@@ -13,6 +13,8 @@ import 'package:intl/intl.dart';
 import 'package:sunmi_printer_plus/enums.dart';
 import 'package:sunmi_printer_plus/sunmi_printer_plus.dart';
 import 'package:gestion_app_mobile/app_localizations.dart';
+import 'package:gestion_app_mobile/error_utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DepositPage extends StatefulWidget {
   final Client? initialClient;
@@ -33,7 +35,6 @@ class _DepositPageState extends State<DepositPage> {
 
   bool _loading = false;
   bool _initialLoading = true;
-  String? _error;
 
   List<Client> _clients = [];
   List<Product> _products = [];
@@ -48,7 +49,28 @@ class _DepositPageState extends State<DepositPage> {
 
   double get _remainingToPay {
     if (_selectedProduct == null) return 0.0;
-    return _selectedProduct!.prixVente - _historyTotal;
+    final remaining = _selectedProduct!.prixVente - _historyTotal;
+    return remaining.clamp(0, double.infinity);
+  }
+
+  bool get _isFullyPaid {
+    // Utiliser une tolérance pour les comparaisons de nombres à virgule flottante
+    if (_selectedProduct == null || _selectedProduct!.prixVente <= 0) return false;
+    // Vérifier que le reste à payer est 0 (ou très proche de 0)
+    // Utiliser une tolérance de 0.01 pour gérer les erreurs d'arrondi
+    return _remainingToPay <= 0.01;
+  }
+
+  bool get _canDeliver {
+    // Le produit peut être livré si :
+    // 1. Le produit est sélectionné
+    // 2. Le reste à payer est 0 (produit entièrement payé)
+    // 3. Le produit est en stock (quantity > 0)
+    // 
+    // IMPORTANT: Si le produit n'est PAS en stock ET le client n'a pas encore tout payé,
+    // le bouton "Livrer" ne s'affichera PAS (car _isFullyPaid sera false OU quantity <= 0)
+    if (_selectedProduct == null) return false;
+    return _isFullyPaid && _selectedProduct!.quantity > 0;
   }
 
   double get _clientCredit {
@@ -77,7 +99,6 @@ class _DepositPageState extends State<DepositPage> {
   Future<void> _loadInitialData() async {
     setState(() {
       _initialLoading = true;
-      _error = null;
     });
     try {
       await Future.wait([
@@ -94,7 +115,7 @@ class _DepositPageState extends State<DepositPage> {
         _clientSearchController.text = existing.name;
       }
     } catch (e) {
-      _error = 'Erreur de chargement des données : $e';
+      // Erreur silencieuse - les données seront rechargées à la prochaine ouverture
     } finally {
       if (mounted) {
         setState(() {
@@ -146,6 +167,26 @@ class _DepositPageState extends State<DepositPage> {
     });
 
     try {
+      // Recharger le produit pour avoir le prix à jour
+      final productResponse = await http.get(Uri.parse(ApiConstants.productsApi));
+      if (productResponse.statusCode == 200) {
+        final productData = jsonDecode(productResponse.body);
+        if (productData is Map && productData['success'] == true && productData['products'] is List) {
+          final products = (productData['products'] as List)
+              .map((e) => Product.fromJson(e as Map<String, dynamic>))
+              .toList();
+          final foundProduct = products.firstWhere(
+            (p) => p.id == _selectedProduct!.id,
+            orElse: () => _selectedProduct!,
+          );
+          if (mounted) {
+            setState(() {
+              _selectedProduct = foundProduct;
+            });
+          }
+        }
+      }
+
       final uri = Uri.parse(
           '${ApiConstants.depositsApi}?client_id=${_selectedClient!.id}&product_id=${_selectedProduct!.id}');
       final response = await http.get(uri);
@@ -214,7 +255,6 @@ class _DepositPageState extends State<DepositPage> {
 
     setState(() {
       _loading = true;
-      _error = null;
     });
 
     try {
@@ -241,18 +281,51 @@ class _DepositPageState extends State<DepositPage> {
         final bool stockReserved =
             (data['stock_reserved'] == true) || (data['stock_reserved'] == 1);
 
-        // Imprimer le reçu (preuve de paiement)
+        // Recharger le produit pour avoir la quantité à jour avant l'impression
+        Product? updatedProduct = _selectedProduct;
+        try {
+          final productResponse = await http.get(Uri.parse(ApiConstants.productsApi));
+          if (productResponse.statusCode == 200) {
+            final productData = jsonDecode(productResponse.body);
+            if (productData is Map && productData['success'] == true && productData['products'] is List) {
+              final products = (productData['products'] as List)
+                  .map((e) => Product.fromJson(e as Map<String, dynamic>))
+                  .toList();
+              final foundProduct = products.firstWhere(
+                (p) => p.id == _selectedProduct!.id,
+                orElse: () => _selectedProduct!,
+              );
+              updatedProduct = foundProduct;
+              // Mettre à jour le produit dans l'état pour que le bouton s'affiche correctement
+              if (mounted) {
+                setState(() {
+                  _selectedProduct = foundProduct;
+                });
+              }
+            }
+          }
+        } catch (_) {
+          // Si le rechargement échoue, on utilise le produit existant
+        }
+
+        // Imprimer le reçu (preuve de paiement) - TOUJOURS imprimer pour chaque dépôt
         try {
           await _printDepositReceipt(
             depositId: depositId,
             client: _selectedClient!,
-            product: _selectedProduct!,
+            product: updatedProduct ?? _selectedProduct!,
             amount: amount,
             date: _selectedDate,
             stockReserved: stockReserved,
           );
-        } catch (_) {
-          // On ne bloque pas l'utilisateur si l'impression échoue
+        } catch (e) {
+          // Afficher un message si l'impression échoue, mais ne pas bloquer l'utilisateur
+          if (mounted) {
+            _showSnackBar(
+              loc.depositPrintError(e.toString()),
+              isError: true,
+            );
+          }
         }
 
         setState(() {
@@ -271,7 +344,7 @@ class _DepositPageState extends State<DepositPage> {
       }
     } catch (e) {
       final loc = AppLocalizations.of(context);
-      _showSnackBar(loc.depositConnectionError(e.toString()), isError: true);
+      _showSnackBar(loc.depositConnectionError(ErrorUtils.getUserFriendlyError(e)), isError: true);
     } finally {
       if (mounted) {
         setState(() {
@@ -290,14 +363,104 @@ class _DepositPageState extends State<DepositPage> {
     );
   }
 
-  Future<void> _closeDeposit() async {
+  Future<void> _deliverProduct() async {
+    final loc = AppLocalizations.of(context);
     if (_selectedClient == null || _selectedProduct == null) return;
 
-    // TODO: Implémenter ici l'appel API qui va clôturer automatiquement
-    // la vente côté serveur et, si nécessaire, enregistrer le crédit client.
-    _showSnackBar(
-      'Clôture du dépôt à implémenter côté serveur.',
+    // Vérifier que le produit est en stock
+    if (_selectedProduct!.quantity <= 0) {
+      _showSnackBar('Le produit n\'est pas en stock', isError: true);
+      return;
+    }
+
+    // Vérifier que le produit est entièrement payé
+    if (!_isFullyPaid) {
+      _showSnackBar('Le produit n\'est pas entièrement payé', isError: true);
+      return;
+    }
+
+    // Confirmer avant de livrer
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(loc.depositDeliverButton),
+        content: Text(loc.depositDeliverConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Confirmer'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+            ),
+          ),
+        ],
+      ),
     );
+
+    if (confirm != true) return;
+
+    setState(() {
+      _loading = true;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('user_id') ?? 1;
+
+      // Créer la vente automatiquement
+      final response = await http.post(
+        Uri.parse(ApiConstants.addSaleApi),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'client_id': _selectedClient!.id,
+          'user_id': userId,
+          'total': _selectedProduct!.prixVente,
+          'imei': '',
+          'garanti': '',
+          'products': [
+            {
+              'id': _selectedProduct!.id,
+              'quantity': 1,
+              'price': _selectedProduct!.prixVente,
+            }
+          ],
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          _showSnackBar(loc.depositDeliverSuccess);
+          // Recharger l'historique
+          await _fetchHistory();
+          if (mounted) {
+            Navigator.pop(context, true);
+          }
+        } else {
+          _showSnackBar(
+            data['message'] ?? loc.depositDeliverError,
+            isError: true,
+          );
+        }
+      } else {
+        _showSnackBar(loc.depositDeliverError, isError: true);
+      }
+    } catch (e) {
+      _showSnackBar(
+        '${loc.depositDeliverError}: $e',
+        isError: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
   }
 
   /// Imprime un reçu de dépôt sur l'imprimante Sunmi (preuve de paiement)
@@ -371,8 +534,16 @@ class _DepositPageState extends State<DepositPage> {
       await SunmiPrinter.bold();
       await SunmiPrinter.printText(loc.depositReceiptStockStatus);
       await SunmiPrinter.resetBold();
-      await SunmiPrinter.printText(
-          stockReserved ? loc.depositReceiptReserved : loc.depositReceiptNotReserved);
+      // Vérifier si le produit est en stock (quantity <= 0)
+      String stockStatusText;
+      if (product.quantity <= 0) {
+        stockStatusText = loc.depositReceiptStockEmpty;
+      } else if (stockReserved) {
+        stockStatusText = loc.depositReceiptReserved;
+      } else {
+        stockStatusText = loc.depositReceiptNotReserved;
+      }
+      await SunmiPrinter.printText(stockStatusText);
       await SunmiPrinter.lineWrap(2);
 
       await SunmiPrinter.setFontSize(SunmiFontSize.SM);
@@ -620,13 +791,10 @@ class _DepositPageState extends State<DepositPage> {
                                     const SizedBox(height: 4),
                                     Text(
                                       loc.depositRemainingToPay +
-                                          _currencyFormatter.format(
-                                            _remainingToPay
-                                                .clamp(0, double.infinity),
-                                          ),
+                                          _currencyFormatter.format(_remainingToPay),
                                       style: TextStyle(
                                         fontSize: 13,
-                                        color: Colors.blueGrey[800],
+                                        color: Colors.green[700],
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -649,23 +817,49 @@ class _DepositPageState extends State<DepositPage> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          if (_selectedProduct != null &&
-                              _remainingToPay <= 0)
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: _closeDeposit,
-                                icon: const Icon(Icons.check_circle_outline),
-                                label: Text(loc.depositCloseButton),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                  foregroundColor: Colors.white,
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 12),
-                                ),
-                              ),
-                            ),
-                          const SizedBox(height: 8),
+                          // Afficher le bouton Livrer si le reste à payer est 0 ET le produit est en stock
+                          Builder(
+                            builder: (context) {
+                              final canDeliver = _canDeliver;
+                              // Debug temporaire pour diagnostiquer
+                              if (_selectedProduct != null) {
+                                debugPrint('DEBUG Livrer: canDeliver=$canDeliver, isFullyPaid=${_isFullyPaid}, quantity=${_selectedProduct!.quantity}, remainingToPay=${_remainingToPay.toStringAsFixed(2)}, historyTotal=${_historyTotal.toStringAsFixed(2)}, prixVente=${_selectedProduct!.prixVente.toStringAsFixed(2)}');
+                              }
+                              if (canDeliver) {
+                                return Column(
+                                  children: [
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton.icon(
+                                        onPressed: _loading ? null : _deliverProduct,
+                                        icon: _loading
+                                            ? const SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child: CircularProgressIndicator(
+                                                  color: Colors.white,
+                                                  strokeWidth: 2,
+                                                ),
+                                              )
+                                            : const Icon(Icons.local_shipping),
+                                        label: Text(
+                                          _loading ? 'Livraison...' : loc.depositDeliverButton,
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.green,
+                                          foregroundColor: Colors.white,
+                                          padding:
+                                              const EdgeInsets.symmetric(vertical: 12),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                  ],
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
+                          ),
                           ListView.builder(
                             shrinkWrap: true,
                             physics:

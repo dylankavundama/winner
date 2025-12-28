@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:gestion_app_mobile/client_model.dart';
 import 'package:gestion_app_mobile/constants.dart';
 import 'package:gestion_app_mobile/app_localizations.dart';
+import 'package:gestion_app_mobile/error_utils.dart';
 import 'package:gestion_app_mobile/product_model.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -78,7 +79,7 @@ class _VentePageState extends State<VentePage> {
       ]);
     } catch (e) {
       final loc = AppLocalizations.of(context);
-      setState(() => _errorMessage = loc.venteLoadError(e.toString()));
+      setState(() => _errorMessage = loc.venteLoadError(ErrorUtils.getUserFriendlyError(e)));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -134,7 +135,7 @@ class _VentePageState extends State<VentePage> {
     } catch (e) {
       final loc = AppLocalizations.of(context);
       setState(() {
-        _errorMessage = loc.venteErrorConnection(e.toString());
+        _errorMessage = loc.venteErrorConnection(ErrorUtils.getUserFriendlyError(e));
       });
     }
   }
@@ -224,7 +225,7 @@ class _VentePageState extends State<VentePage> {
       return null;
     } catch (e) {
       final loc = AppLocalizations.of(context);
-      _showError(loc.venteErrorConnectionClient(e.toString()));
+      _showError(loc.venteErrorConnectionClient(ErrorUtils.getUserFriendlyError(e)));
       return null;
     }
   }

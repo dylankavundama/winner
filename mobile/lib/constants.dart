@@ -32,4 +32,5 @@ class ApiConstants {
 
   // Dépôts (paiement par tranches)
   static const String depositsApi = '$baseUrl/deposits.php';
+  static const String depositsHistoryApi = '$baseUrl/deposits_history.php';
 }

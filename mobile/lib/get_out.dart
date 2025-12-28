@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:gestion_app_mobile/constants.dart';
+import 'package:gestion_app_mobile/error_utils.dart';
 
 class StockOutHistoryPage extends StatefulWidget {
   const StockOutHistoryPage({Key? key}) : super(key: key);
@@ -58,7 +59,7 @@ class _StockOutHistoryPageState extends State<StockOutHistoryPage> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur de connexion: $e')),
+        SnackBar(content: Text('Erreur de connexion: ${ErrorUtils.getUserFriendlyError(e)}')),
       );
     }
   }
@@ -86,7 +87,7 @@ class _StockOutHistoryPageState extends State<StockOutHistoryPage> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Connection error: $e';
+        _errorMessage = 'Connection error: ${ErrorUtils.getUserFriendlyError(e)}';
       });
     } finally {
       setState(() {

@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gestion_app_mobile/constants.dart';
 import 'package:gestion_app_mobile/app_localizations.dart';
+import 'package:gestion_app_mobile/error_utils.dart';
 
 class AddProductPage extends StatefulWidget {
   const AddProductPage({Key? key}) : super(key: key);
@@ -90,7 +91,7 @@ class _AddProductPageState extends State<AddProductPage> {
       } catch (e) {
         final loc = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(loc.addProductConnectionError(e.toString())), backgroundColor: Colors.red),
+          SnackBar(content: Text(loc.addProductConnectionError(ErrorUtils.getUserFriendlyError(e))), backgroundColor: Colors.red),
         );
       } finally {
         setState(() {

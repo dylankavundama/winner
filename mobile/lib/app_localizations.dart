@@ -55,6 +55,7 @@ class AppLocalizations {
       'dashboard_stat_total_sales_amount': 'Total des ventes',
       'dashboard_stat_revenue': 'Chiffre d\'affaires',
       'dashboard_stat_total_deposits': 'Total dépôts',
+      'dashboard_menu_chiffre_affaire': 'Chiffre d\'affaire',
       'dashboard_period_6_months': '6 derniers mois',
       'dashboard_period_12_months': '12 derniers mois',
       'dashboard_period_current_year': 'Année en cours',
@@ -90,7 +91,47 @@ class AppLocalizations {
       'benefice_server_error': 'Erreur serveur ({code})',
       'benefice_connection_error': 'Erreur de connexion: {error}',
 
+      // Chiffre d'affaire page
+      'chiffre_affaire_title': 'Chiffre d\'affaire',
+      'chiffre_affaire_filters': 'Filtres',
+      'chiffre_affaire_start_date': 'Date de début',
+      'chiffre_affaire_end_date': 'Date de fin',
+      'chiffre_affaire_group_by': 'Grouper par',
+      'chiffre_affaire_group_by_all': 'Tout',
+      'chiffre_affaire_group_by_day': 'Jour',
+      'chiffre_affaire_group_by_month': 'Mois',
+      'chiffre_affaire_group_by_year': 'Année',
+      'chiffre_affaire_group_by_product': 'Produit',
+      'chiffre_affaire_reset': 'Réinitialiser',
+      'chiffre_affaire_total': 'Total chiffre d\'affaire',
+      'chiffre_affaire_sales_count': 'Nombre de ventes',
+      'chiffre_affaire_products_sold': 'Produits vendus',
+      'chiffre_affaire_avg_sale': 'Vente moyenne',
+      'chiffre_affaire_total_stock': 'Valeur du stock',
+      'chiffre_affaire_details_by_period': 'Détail par période',
+      'chiffre_affaire_details_by_product': 'Détail par produit',
+
       // Dash Vendeur
+      'vendor_dashboard_title': 'Tableau de bord vendeur',
+      'vendor_menu_dashboard': 'Tableau de bord',
+      'vendor_menu_sales': 'Ventes',
+      'vendor_menu_invoices': 'Factures',
+      'vendor_menu_clients': 'Clients',
+      'vendor_menu_products': 'Produits',
+      'vendor_menu_deposits': 'Dépôts',
+      'vendor_menu_expenses': 'Sorties',
+      'vendor_menu_stock_out': 'Sortie de stock',
+      'vendor_menu_logout': 'Déconnexion',
+      'vendor_action_refresh': 'Actualiser',
+      'vendor_action_filter_date': 'Filtrer par date',
+      'vendor_action_reset_filter': 'Réinitialiser le filtre',
+      'vendor_empty_no_sales': 'Aucune vente enregistrée',
+      'vendor_empty_no_sales_for_date': 'Aucune vente pour cette date',
+      'vendor_empty_hint': 'Les ventes apparaîtront ici',
+      'vendor_empty_hint_other_date': 'Essayez une autre date',
+      'vendor_total_deposits_title': 'Total des dépôts enregistrés',
+      'vendor_total_caisse_title': 'Total caisse',
+      'vendor_fab_new_sale': 'Nouvelle vente',
       'vendor_new_sale_notification': 'Nouvelle vente enregistrée !',
       'vendor_data_updated': 'Données mises à jour',
       'vendor_load_error': 'Erreur lors du chargement des ventes',
@@ -120,6 +161,10 @@ class AppLocalizations {
       'deposit_reserved': 'Réservé',
       'deposit_out_of_stock': 'Hors stock',
       'deposit_close_button': 'Clôturer',
+      'deposit_deliver_button': 'Livrer',
+      'deposit_deliver_confirm': 'Créer la vente et livrer le produit ?',
+      'deposit_deliver_success': 'Vente créée et produit livré avec succès.',
+      'deposit_deliver_error': 'Erreur lors de la création de la vente.',
       'deposit_client_credit': 'Crédit client : ',
       'deposit_success': 'Dépôt enregistré avec succès.',
       'deposit_error': 'Erreur lors de l\'enregistrement du dépôt.',
@@ -138,8 +183,17 @@ class AppLocalizations {
       'deposit_receipt_stock_status': 'Statut stock',
       'deposit_receipt_reserved': 'Produit réservé (stock débité)',
       'deposit_receipt_not_reserved': 'Hors stock',
+      'deposit_receipt_stock_empty': 'Stock vide',
       'deposit_receipt_proof': 'Ce reçu fait office de preuve de paiement du dépôt.',
       'deposit_receipt_thanks': 'Merci pour votre confiance.',
+
+      // Additional Deposit Page
+      'additional_deposit_title': 'Dépôt supplémentaire',
+      'additional_deposit_client': 'Client',
+      'additional_deposit_product': 'Produit',
+      'additional_deposit_amount_label': 'Montant du dépôt supplémentaire',
+      'additional_deposit_date_label': 'Date du dépôt',
+      'additional_deposit_save_button': 'Enregistrer et imprimer',
 
       // Deposits Overview Page
       'deposits_overview_title': 'Deposits',
@@ -520,6 +574,10 @@ class AppLocalizations {
       'deposit_reserved': 'Reserved',
       'deposit_out_of_stock': 'Out of stock',
       'deposit_close_button': 'Close',
+      'deposit_deliver_button': 'Deliver',
+      'deposit_deliver_confirm': 'Create sale and deliver product?',
+      'deposit_deliver_success': 'Sale created and product delivered successfully.',
+      'deposit_deliver_error': 'Error creating sale.',
       'deposit_client_credit': 'Client credit: ',
       'deposit_success': 'Deposit recorded successfully.',
       'deposit_error': 'Error recording deposit.',
@@ -538,8 +596,17 @@ class AppLocalizations {
       'deposit_receipt_stock_status': 'Stock status',
       'deposit_receipt_reserved': 'Product reserved (stock debited)',
       'deposit_receipt_not_reserved': 'Out of stock',
+      'deposit_receipt_stock_empty': 'Stock empty',
       'deposit_receipt_proof': 'This receipt serves as proof of deposit payment.',
       'deposit_receipt_thanks': 'Thank you for your trust.',
+
+      // Additional Deposit Page
+      'additional_deposit_title': 'Additional Deposit',
+      'additional_deposit_client': 'Client',
+      'additional_deposit_product': 'Product',
+      'additional_deposit_amount_label': 'Additional deposit amount',
+      'additional_deposit_date_label': 'Deposit date',
+      'additional_deposit_save_button': 'Save and print',
 
       // Deposits Overview Page
       'deposits_overview_title': 'Deposits',
@@ -818,6 +885,26 @@ class AppLocalizations {
       'vente_error_generate_invoice': 'Error generating invoice',
       'vente_product_added_to_sale': '{product} added to sale',
 
+      // Chiffre d'affaire page
+      'chiffre_affaire_title': 'Revenue',
+      'chiffre_affaire_filters': 'Filters',
+      'chiffre_affaire_start_date': 'Start date',
+      'chiffre_affaire_end_date': 'End date',
+      'chiffre_affaire_group_by': 'Group by',
+      'chiffre_affaire_group_by_all': 'All',
+      'chiffre_affaire_group_by_day': 'Day',
+      'chiffre_affaire_group_by_month': 'Month',
+      'chiffre_affaire_group_by_year': 'Year',
+      'chiffre_affaire_group_by_product': 'Product',
+      'chiffre_affaire_reset': 'Reset',
+      'chiffre_affaire_total': 'Total revenue',
+      'chiffre_affaire_sales_count': 'Sales count',
+      'chiffre_affaire_products_sold': 'Products sold',
+      'chiffre_affaire_avg_sale': 'Average sale',
+      'chiffre_affaire_total_stock': 'Stock value',
+      'chiffre_affaire_details_by_period': 'Details by period',
+      'chiffre_affaire_details_by_product': 'Details by product',
+
       // Vendor dashboard
       'vendor_dashboard_title': 'Salesperson dashboard',
       'vendor_menu_dashboard': 'Dashboard',
@@ -825,6 +912,7 @@ class AppLocalizations {
       'vendor_menu_invoices': 'Invoices',
       'vendor_menu_clients': 'Clients',
       'vendor_menu_products': 'Products',
+      'vendor_menu_deposits': 'Deposits',
       'vendor_menu_expenses': 'Expenses',
       'vendor_menu_stock_out': 'Stock out',
       'vendor_menu_logout': 'Logout',
@@ -870,6 +958,7 @@ class AppLocalizations {
   String get dashboardMenuReports => _t('dashboard_menu_reports');
   String get dashboardMenuBenefits => _t('dashboard_menu_benefits');
   String get dashboardMenuDeposits => _t('dashboard_menu_deposits');
+  String get dashboardMenuChiffreAffaire => _t('dashboard_menu_chiffre_affaire');
   String get dashboardMenuExpenses => _t('dashboard_menu_expenses');
   String get dashboardMenuStockOut => _t('dashboard_menu_stock_out');
   String get dashboardMenuLogout => _t('dashboard_menu_logout');
@@ -900,6 +989,7 @@ class AppLocalizations {
   String get vendorMenuInvoices => _t('vendor_menu_invoices');
   String get vendorMenuClients => _t('vendor_menu_clients');
   String get vendorMenuProducts => _t('vendor_menu_products');
+  String get vendorMenuDeposits => _t('vendor_menu_deposits');
   String get vendorMenuExpenses => _t('vendor_menu_expenses');
   String get vendorMenuStockOut => _t('vendor_menu_stock_out');
   String get vendorMenuLogout => _t('vendor_menu_logout');
@@ -914,7 +1004,29 @@ class AppLocalizations {
       _t('vendor_empty_hint_other_date');
   String get vendorTotalDepositsTitle =>
       _t('vendor_total_deposits_title');
+  String get vendorTotalCaisseTitle =>
+      _t('vendor_total_caisse_title');
   String get vendorFabNewSale => _t('vendor_fab_new_sale');
+
+  // Chiffre d'affaire getters
+  String get chiffreAffaireTitle => _t('chiffre_affaire_title');
+  String get chiffreAffaireFilters => _t('chiffre_affaire_filters');
+  String get chiffreAffaireStartDate => _t('chiffre_affaire_start_date');
+  String get chiffreAffaireEndDate => _t('chiffre_affaire_end_date');
+  String get chiffreAffaireGroupBy => _t('chiffre_affaire_group_by');
+  String get chiffreAffaireGroupByAll => _t('chiffre_affaire_group_by_all');
+  String get chiffreAffaireGroupByDay => _t('chiffre_affaire_group_by_day');
+  String get chiffreAffaireGroupByMonth => _t('chiffre_affaire_group_by_month');
+  String get chiffreAffaireGroupByYear => _t('chiffre_affaire_group_by_year');
+  String get chiffreAffaireGroupByProduct => _t('chiffre_affaire_group_by_product');
+  String get chiffreAffaireReset => _t('chiffre_affaire_reset');
+  String get chiffreAffaireTotal => _t('chiffre_affaire_total');
+  String get chiffreAffaireSalesCount => _t('chiffre_affaire_sales_count');
+  String get chiffreAffaireProductsSold => _t('chiffre_affaire_products_sold');
+  String get chiffreAffaireAvgSale => _t('chiffre_affaire_avg_sale');
+  String get chiffreAffaireTotalStock => _t('chiffre_affaire_total_stock');
+  String get chiffreAffaireDetailsByPeriod => _t('chiffre_affaire_details_by_period');
+  String get chiffreAffaireDetailsByProduct => _t('chiffre_affaire_details_by_product');
 
   // Add Product getters
   String get addProductTitle => _t('add_product_title');
@@ -1220,6 +1332,10 @@ class AppLocalizations {
   String get depositReserved => _t('deposit_reserved');
   String get depositOutOfStock => _t('deposit_out_of_stock');
   String get depositCloseButton => _t('deposit_close_button');
+  String get depositDeliverButton => _t('deposit_deliver_button');
+  String get depositDeliverConfirm => _t('deposit_deliver_confirm');
+  String get depositDeliverSuccess => _t('deposit_deliver_success');
+  String get depositDeliverError => _t('deposit_deliver_error');
   String get depositClientCredit => _t('deposit_client_credit');
   String get depositSuccess => _t('deposit_success');
   String get depositError => _t('deposit_error');
@@ -1238,8 +1354,17 @@ class AppLocalizations {
   String get depositReceiptStockStatus => _t('deposit_receipt_stock_status');
   String get depositReceiptReserved => _t('deposit_receipt_reserved');
   String get depositReceiptNotReserved => _t('deposit_receipt_not_reserved');
+  String get depositReceiptStockEmpty => _t('deposit_receipt_stock_empty');
   String get depositReceiptProof => _t('deposit_receipt_proof');
   String get depositReceiptThanks => _t('deposit_receipt_thanks');
+
+  // Additional Deposit Page getters
+  String get additionalDepositTitle => _t('additional_deposit_title');
+  String get additionalDepositClient => _t('additional_deposit_client');
+  String get additionalDepositProduct => _t('additional_deposit_product');
+  String get additionalDepositAmountLabel => _t('additional_deposit_amount_label');
+  String get additionalDepositDateLabel => _t('additional_deposit_date_label');
+  String get additionalDepositSaveButton => _t('additional_deposit_save_button');
 
   // Deposits Overview getters
   String get depositsOverviewTitle => _t('deposits_overview_title');

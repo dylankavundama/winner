@@ -1,6 +1,6 @@
 <?php
 header('Content-Type: application/json');
-require_once 'config/db.php';
+require_once '../config/db.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'message' => 'Méthode non autorisée']);

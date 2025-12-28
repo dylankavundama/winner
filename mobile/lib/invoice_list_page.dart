@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:gestion_app_mobile/constants.dart';
+import 'package:gestion_app_mobile/error_utils.dart';
 import 'facture_page.dart';
 
 class Invoice {
@@ -71,7 +72,7 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
       }
     } catch (e) {
       setState(() {
-        errorMessage = 'Erreur de connexion: $e';
+        errorMessage = 'Erreur de connexion: ${ErrorUtils.getUserFriendlyError(e)}';
         isLoading = false;
       });
     }
@@ -204,10 +205,13 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                               child: Text(invoice.id.toString()),
                               backgroundColor: Colors.blueGrey[100],
                             ),
-                            title: Text('Client : ${invoice.clientName}'),
+                            title: Text(
+                              'Client : ${invoice.clientName}',
+                              overflow: TextOverflow.ellipsis,
+                            ),
                             subtitle: Text('Date : ${invoice.saleDate}'),
                             trailing: SizedBox(
-                              width: 170, // Ajuste la largeur si besoin
+                              width: 170,
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -216,15 +220,9 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                                   Text(
                                     '${invoice.total.toStringAsFixed(2)} \$',
                                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                //  const SizedBox(width: 8),
-                                  // Text(
-                                  //   invoice.status,
-                                  //   style: TextStyle(
-                                  //     color: invoice.status.toLowerCase() == 'payée' ? Colors.green : Colors.orange,
-                                  //     fontSize: 13,
-                                  //   ),
-                                  // ),
+                                  const SizedBox(width: 8),
                                   IconButton(
                                     icon: Icon(
                                       invoice.status.toLowerCase() == 'payée' ? Icons.check_circle : Icons.cancel,
@@ -233,6 +231,8 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                                     ),
                                     tooltip: invoice.status.toLowerCase() == 'payée' ? 'Marquer non payée' : 'Marquer payée',
                                     onPressed: () => _toggleInvoiceStatus(invoice),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
                                   ),
                                 ],
                               ),

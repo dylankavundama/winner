@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:gestion_app_mobile/constants.dart';
 import 'package:gestion_app_mobile/app_localizations.dart';
+import 'package:gestion_app_mobile/error_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
@@ -74,7 +75,7 @@ class _SortiePageState extends State<SortiePage> {
     } catch (e) {
       final loc = AppLocalizations.of(context);
       setState(() {
-        errorMessage = loc.sortieConnectionError(e.toString());
+        errorMessage = loc.sortieConnectionError(ErrorUtils.getUserFriendlyError(e));
         isLoading = false;
       });
     }
@@ -127,7 +128,7 @@ class _SortiePageState extends State<SortiePage> {
     }
   } catch (e) {
     final loc = AppLocalizations.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loc.sortieError(e.toString()))));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(loc.sortieError(ErrorUtils.getUserFriendlyError(e)))));
   } finally {
     setState(() => isAdding = false);
   }
@@ -389,9 +390,25 @@ class _SortiePageState extends State<SortiePage> {
                 rows: sorties.map<DataRow>((s) => DataRow(cells: [
                       DataCell(Text(s['id'].toString())),
                       // DataCell(Text(s['username'] ?? '')),
-                      DataCell(Text(widget.loggedInUsername)),
+                      DataCell(
+                        SizedBox(
+                          width: 100,
+                          child: Text(
+                            widget.loggedInUsername,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
                       DataCell(Text('${s['montant']} \$')),
-                      DataCell(Text(s['motif'] ?? '')),
+                      DataCell(
+                        SizedBox(
+                          width: 150,
+                          child: Text(
+                            s['motif'] ?? '',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
                       DataCell(_buildTypeBadge(s['type'] ?? '')),
                       DataCell(Text(s['date_sortie'] ?? '')),
                     ])).toList(),

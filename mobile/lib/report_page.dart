@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:gestion_app_mobile/constants.dart';
 import 'package:gestion_app_mobile/app_localizations.dart';
+import 'package:gestion_app_mobile/error_utils.dart';
 import 'package:intl/intl.dart';
 
 class ReportPage extends StatefulWidget {
@@ -69,7 +70,7 @@ class _ReportPageState extends State<ReportPage>
     } catch (e) {
       final loc = AppLocalizations.of(context);
       setState(() {
-        errorMessage = loc.reportConnectionError(e.toString());
+        errorMessage = loc.reportConnectionError(ErrorUtils.getUserFriendlyError(e));
         isLoading = false;
       });
     }
@@ -104,15 +105,39 @@ class _ReportPageState extends State<ReportPage>
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : errorMessage != null
-              ? Center(child: Text(errorMessage!))
-              : TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildSalesTab(),
-                    _buildLowStockTable(),
-                    _buildTopClientsTable(),
-                    _buildUnpaidTable(),
-                  ],
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline, size: 64, color: Colors.red),
+                        const SizedBox(height: 16),
+                        Text(
+                          errorMessage!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => _fetchReports(),
+                          child: const Text('Réessayer'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: () => _fetchReports(),
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildSalesTab(),
+                      _buildLowStockTable(),
+                      _buildTopClientsTable(),
+                      _buildUnpaidTable(),
+                    ],
+                  ),
                 ),
     );
   }
@@ -140,7 +165,7 @@ class _ReportPageState extends State<ReportPage>
                     if (picked != null) {
                       setState(() =>
                           start = DateFormat('yyyy-MM-dd').format(picked));
-                      _fetchReports();
+                      _fetchReports(customStart: start, customEnd: end);
                     }
                   },
                 ),
@@ -161,7 +186,7 @@ class _ReportPageState extends State<ReportPage>
                     if (picked != null) {
                       setState(
                           () => end = DateFormat('yyyy-MM-dd').format(picked));
-                      _fetchReports();
+                      _fetchReports(customStart: start, customEnd: end);
                     }
                   },
                 ),
@@ -285,7 +310,15 @@ class _ReportPageState extends State<ReportPage>
                 rows: lowStock
                     .map<DataRow>((p) => DataRow(cells: [
                           DataCell(Text(p['id'].toString())),
-                          DataCell(Text(p['name'] ?? '')),
+                          DataCell(
+                            SizedBox(
+                              width: 150,
+                              child: Text(
+                                p['name'] ?? '',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
                           DataCell(Text(p['quantity'].toString())),
                           DataCell(Text('${p['price']} \$')),
                         ]))
@@ -340,7 +373,15 @@ class _ReportPageState extends State<ReportPage>
                 ],
                 rows: topClients
                     .map<DataRow>((c) => DataRow(cells: [
-                          DataCell(Text(c['name'] ?? '')),
+                          DataCell(
+                            SizedBox(
+                              width: 200,
+                              child: Text(
+                                c['name'] ?? '',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
                           DataCell(Text('${c['total_achats']} \$')),
                         ]))
                     .toList(),
@@ -397,7 +438,15 @@ class _ReportPageState extends State<ReportPage>
                 rows: unpaid
                     .map<DataRow>((f) => DataRow(cells: [
                           DataCell(Text(f['id'].toString())),
-                          DataCell(Text(f['client'] ?? '')),
+                          DataCell(
+                            SizedBox(
+                              width: 120,
+                              child: Text(
+                                f['client'] ?? '',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
                           DataCell(Text(f['invoice_date'] ?? '')),
                           DataCell(Text('${f['amount']} \$')),
                         ]))

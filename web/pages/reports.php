@@ -74,6 +74,7 @@ $unpaid = $pdo->query("SELECT i.id, c.name AS client, i.amount, i.invoice_date F
             <a href="invoices.php"><i class="bi bi-receipt"></i> Factures</a>
             <a href="clients.php"><i class="bi bi-people"></i> Clients</a>
             <a href="reports.php" class="active"><i class="bi bi-bar-chart"></i> Rapports</a>
+            <a href="chiffre_affaire.php"><i class="bi bi-cash-stack"></i> Chiffre d'affaire</a>
             <a href="stock.php"><i class="bi bi-archive"></i> Stock</a>
             <a href="benefice.php"><i class="bi bi-cash-coin"></i> Bénéfice</a>
             <a href="sortie.php"><i class="bi bi-arrow-down-circle"></i> Sorties</a>

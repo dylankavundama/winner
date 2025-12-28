@@ -144,13 +144,13 @@ $productId = isset($_GET['product_id']) ? (int)$_GET['product_id'] : null;
 
 try {
     if ($clientId && $productId) {
-        // Tous les dépôts pour ce client et ce produit + total cumulé
+        // Tous les dépôts non utilisés pour ce client et ce produit + total cumulé
         $stmt = $pdo->prepare(
             'SELECT d.*, c.name AS client_name, p.name AS product_name
              FROM deposits d
              LEFT JOIN clients c ON d.client_id = c.id
              LEFT JOIN products p ON d.product_id = p.id
-             WHERE d.client_id = :client_id AND d.product_id = :product_id
+             WHERE d.client_id = :client_id AND d.product_id = :product_id AND d.sale_id IS NULL
              ORDER BY d.deposit_date DESC, d.id DESC'
         );
         $stmt->execute([
@@ -162,7 +162,7 @@ try {
         $sumStmt = $pdo->prepare(
             'SELECT IFNULL(SUM(amount),0) AS total_amount
              FROM deposits
-             WHERE client_id = :client_id AND product_id = :product_id'
+             WHERE client_id = :client_id AND product_id = :product_id AND sale_id IS NULL'
         );
         $sumStmt->execute([
             ':client_id' => $clientId,
@@ -178,13 +178,14 @@ try {
         exit;
     }
 
+    // Filtrer pour ne montrer que les dépôts non utilisés (sale_id IS NULL)
     if ($clientId) {
         $stmt = $pdo->prepare(
             'SELECT d.*, c.name AS client_name, p.name AS product_name
              FROM deposits d
              LEFT JOIN clients c ON d.client_id = c.id
              LEFT JOIN products p ON d.product_id = p.id
-             WHERE d.client_id = :client_id
+             WHERE d.client_id = :client_id AND d.sale_id IS NULL
              ORDER BY d.deposit_date DESC, d.id DESC'
         );
         $stmt->execute([':client_id' => $clientId]);
@@ -194,6 +195,7 @@ try {
              FROM deposits d
              LEFT JOIN clients c ON d.client_id = c.id
              LEFT JOIN products p ON d.product_id = p.id
+             WHERE d.sale_id IS NULL
              ORDER BY d.deposit_date DESC, d.id DESC'
         );
     }

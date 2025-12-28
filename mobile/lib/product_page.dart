@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gestion_app_mobile/constants.dart';
 import 'package:gestion_app_mobile/main.dart';
 import 'package:gestion_app_mobile/app_localizations.dart';
+import 'package:gestion_app_mobile/error_utils.dart';
 
 // --- Product Model ---
 class Product {
@@ -164,7 +165,7 @@ class _ProductPageState extends State<ProductPage> {
     // Catch network errors or other exceptions
     final loc = AppLocalizations.of(context);
     setState(() {
-      errorMessage = loc.productConnectionError(e.toString());
+      errorMessage = loc.productConnectionError(ErrorUtils.getUserFriendlyError(e));
       isLoading = false;
     });
     print('Error fetching products: $e'); // For debugging
@@ -737,7 +738,7 @@ class _ProductPageState extends State<ProductPage> {
       final loc = AppLocalizations.of(context);
       return {
         'success': false,
-        'message': loc.productUpdateConnectionError(e.toString())
+        'message': loc.productUpdateConnectionError(ErrorUtils.getUserFriendlyError(e))
       };
     }
   }

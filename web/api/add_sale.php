@@ -55,6 +55,21 @@ function addSale($pdo, $clientId, $userId, $total, $imei, $garanti, $products) {
                 ':quantity' => $product['quantity'],
                 ':product_id' => $product['id']
             ]);
+            
+            // 4. Marquer les dépôts pour ce client et ce produit comme utilisés
+            $updateDepositsStmt = $pdo->prepare("
+                UPDATE deposits 
+                SET sale_id = :sale_id 
+                WHERE client_id = :client_id 
+                AND product_id = :product_id 
+                AND sale_id IS NULL
+            ");
+            
+            $updateDepositsStmt->execute([
+                ':sale_id' => $saleId,
+                ':client_id' => $clientId,
+                ':product_id' => $product['id']
+            ]);
         }
         
         $pdo->commit();

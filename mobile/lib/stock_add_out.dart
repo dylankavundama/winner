@@ -4,12 +4,10 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:gestion_app_mobile/constants.dart';
 import 'package:gestion_app_mobile/app_localizations.dart';
+import 'package:gestion_app_mobile/error_utils.dart';
 import 'package:gestion_app_mobile/client_model.dart';
 import 'package:gestion_app_mobile/product_model.dart' show Product;
 
-// TODO: N'oubliez pas d'importer la page d'historique des sorties de stock.
-// Par exemple : import 'package:gestion_app_mobile/stock_out_history_page.dart';
-// class StockOutHistoryPage extends StatelessWidget { ... }
 
 class NewSalePage extends StatefulWidget {
   const NewSalePage({Key? key}) : super(key: key);
@@ -28,6 +26,7 @@ class _NewSalePageState extends State<NewSalePage> {
 
   // Client data
   final TextEditingController _clientNameController = TextEditingController();
+  final TextEditingController _productSearchController = TextEditingController();
 
   // User data (simplified for a non-session environment)
   // Hardcoded ID, not recommended for production.
@@ -35,12 +34,18 @@ class _NewSalePageState extends State<NewSalePage> {
 
   bool _isLoading = true;
   String? _errorMessage;
-  String _productSearchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _loadInitialData();
+  }
+
+  @override
+  void dispose() {
+    _clientNameController.dispose();
+    _productSearchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadInitialData() async {
@@ -69,7 +74,7 @@ class _NewSalePageState extends State<NewSalePage> {
       }
     } catch (e) {
       final loc = AppLocalizations.of(context);
-      _errorMessage = loc.stockAddOutConnectionError(e.toString());
+      _errorMessage = loc.stockAddOutConnectionError(ErrorUtils.getUserFriendlyError(e));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -127,7 +132,7 @@ class _NewSalePageState extends State<NewSalePage> {
       final loc = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(loc.stockAddOutClientConnectionError(e.toString())),
+          content: Text(loc.stockAddOutClientConnectionError(ErrorUtils.getUserFriendlyError(e))),
           backgroundColor: Colors.red,
         ),
       );
@@ -247,7 +252,7 @@ class _NewSalePageState extends State<NewSalePage> {
         // Reset the page
         _cart.clear();
         _clientNameController.clear();
-        _productSearchQuery = '';
+        _productSearchController.clear();
         await _fetchProducts(); // Re-fetch products to show updated stock
 
         // Navigate to the StockOutHistoryPage
@@ -266,7 +271,7 @@ class _NewSalePageState extends State<NewSalePage> {
     } catch (e) {
       final loc = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(loc.stockAddOutConnectionErrorSale(e.toString())),
+          content: Text(loc.stockAddOutConnectionErrorSale(ErrorUtils.getUserFriendlyError(e))),
           backgroundColor: Colors.red));
     } finally {
       setState(() => _isLoading = false);
@@ -329,9 +334,9 @@ class _NewSalePageState extends State<NewSalePage> {
                       const SizedBox(height: 16),
                       // Product search bar
                       TextField(
+                        controller: _productSearchController,
                         onChanged: (value) {
                           setState(() {
-                            _productSearchQuery = value;
                             _filteredProducts = _allProducts
                                 .where((p) =>
                                     p.quantity > 0 &&

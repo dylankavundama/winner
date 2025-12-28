@@ -8,6 +8,7 @@ import 'package:gestion_app_mobile/main.dart';
 import 'package:gestion_app_mobile/product_page.dart';
 import 'package:gestion_app_mobile/report_page.dart';
 import 'package:gestion_app_mobile/sale_list_page.dart';
+import 'package:gestion_app_mobile/chiffre_affaire_page.dart';
  
 import 'package:gestion_app_mobile/vente_page.dart';
 import 'package:http/http.dart' as http;
@@ -16,8 +17,10 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gestion_app_mobile/client.dart';
 import 'package:gestion_app_mobile/deposits_overview_page.dart';
+import 'package:gestion_app_mobile/deposits_history_page.dart';
 import 'package:gestion_app_mobile/app_localizations.dart';
 import 'package:gestion_app_mobile/language_selection_page.dart';
+import 'package:gestion_app_mobile/error_utils.dart';
 import 'sortie_page.dart';
  
 
@@ -43,6 +46,7 @@ class _DashboardPageState extends State<DashboardPage> {
   double totalSalesAmount = 0.0;
   double totalChiffreAffaire = 0.0;
   double totalDeposits = 0.0;
+  double totalCaisse = 0.0;
   List<String> chartMonths = [];
   List<double> chartTotals = [];
 
@@ -135,6 +139,9 @@ class _DashboardPageState extends State<DashboardPage> {
               (data['total_chiffre_affaire'] as num?)?.toDouble() ?? 0.0;
           totalDeposits =
               (data['total_deposits'] as num?)?.toDouble() ?? 0.0;
+          totalCaisse =
+              (data['total_caisse'] as num?)?.toDouble() ?? 0.0;
+          errorMessage = null; // Réinitialiser l'erreur en cas de succès
           isLoading = false;
         });
       } else if (response.statusCode == 401) {
@@ -153,7 +160,7 @@ class _DashboardPageState extends State<DashboardPage> {
       }
     } catch (e) {
       setState(() {
-        errorMessage = "Erreur de connexion au serveur: $e";
+        errorMessage = "Erreur de connexion au serveur: ${ErrorUtils.getUserFriendlyError(e)}";
         isLoading = false;
       });
     }
@@ -324,6 +331,16 @@ class _DashboardPageState extends State<DashboardPage> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.trending_up),
+              title: Text(loc.dashboardMenuChiffreAffaire),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ChiffreAffairePage()),
+                );
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.savings),
               title: Text(loc.dashboardMenuDeposits),
               onTap: () {
@@ -331,6 +348,17 @@ class _DashboardPageState extends State<DashboardPage> {
                   context,
                   MaterialPageRoute(
                       builder: (context) => const DepositsOverviewPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text('Historique des Dépôts'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const DepositsHistoryPage()),
                 );
               },
             ),
@@ -380,22 +408,36 @@ class _DashboardPageState extends State<DashboardPage> {
           ],
         ),
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : errorMessage != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Text(
-                      errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.red, fontSize: 18),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          // Réinitialiser l'erreur avant de recharger les données
+          setState(() {
+            errorMessage = null;
+          });
+          // Ne pas mettre isLoading à true pour permettre le refresh même pendant le chargement
+          await _fetchDashboardData();
+          await _fetchChartData();
+        },
+        child: isLoading && errorMessage == null
+            ? const Center(child: CircularProgressIndicator())
+            : errorMessage != null
+                ? SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Text(
+                          errorMessage!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.red, fontSize: 18),
+                        ),
+                      ),
                     ),
-                  ),
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
+                  )
+                : SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _buildUserInfoCard(widget.loggedInUsername),
@@ -434,38 +476,118 @@ class _DashboardPageState extends State<DashboardPage> {
                             childAspectRatio:
                                 constraints.maxWidth >= 600 ? 1.6 : 1.3,
                             children: [
-                              _buildStatCard(loc.dashboardStatClients,
-                                  totalClients.toString(),
-                                  Icons.people_alt_outlined, Colors.blueAccent),
                               _buildStatCard(
-                                  loc.dashboardStatProducts,
-                                  totalProducts.toString(),
-                                  Icons.inventory_2_outlined,
-                                  Colors.green),
+                                loc.dashboardStatClients,
+                                totalClients.toString(),
+                                Icons.people_alt_outlined,
+                                Colors.blueAccent,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const ClientPage(),
+                                    ),
+                                  );
+                                },
+                              ),
                               _buildStatCard(
-                                  loc.dashboardStatSales,
-                                  totalSales.toString(),
-                                  Icons.shopping_cart_outlined, Colors.teal),
+                                loc.dashboardStatProducts,
+                                totalProducts.toString(),
+                                Icons.inventory_2_outlined,
+                                Colors.green,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const ProductPage(),
+                                    ),
+                                  );
+                                },
+                              ),
                               _buildStatCard(
-                                  loc.dashboardStatInvoices,
-                                  totalInvoices.toString(),
-                                  Icons.receipt_long_outlined,
-                                  Colors.orange),
+                                loc.dashboardStatSales,
+                                totalSales.toString(),
+                                Icons.shopping_cart_outlined,
+                                Colors.teal,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const SaleListPage(),
+                                    ),
+                                  );
+                                },
+                              ),
                               _buildStatCard(
-                                  loc.dashboardStatTotalSalesAmount,
-                                  '${totalSalesAmount.toStringAsFixed(2)} \$',
-                                  Icons.payments_outlined,
-                                  Colors.purple),
+                                loc.dashboardStatInvoices,
+                                totalInvoices.toString(),
+                                Icons.receipt_long_outlined,
+                                Colors.orange,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const InvoiceListPage(),
+                                    ),
+                                  );
+                                },
+                              ),
                               _buildStatCard(
-                                  loc.dashboardStatRevenue,
-                                  '${totalChiffreAffaire.toStringAsFixed(2)} \$',
-                                  Icons.area_chart_outlined,
-                                  Colors.red),
+                                loc.dashboardStatTotalSalesAmount,
+                                '${totalSalesAmount.toStringAsFixed(2)} \$',
+                                Icons.payments_outlined,
+                                Colors.purple,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const SaleListPage(),
+                                    ),
+                                  );
+                                },
+                              ),
                               _buildStatCard(
-                                  loc.dashboardStatTotalDeposits,
-                                  '${totalDeposits.toStringAsFixed(2)} \$',
-                                  Icons.savings,
-                                  Colors.blueGrey),
+                                loc.dashboardStatRevenue,
+                                '${totalChiffreAffaire.toStringAsFixed(2)} \$',
+                                Icons.area_chart_outlined,
+                                Colors.red,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const ReportPage(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              _buildStatCard(
+                                loc.dashboardStatTotalDeposits,
+                                '${totalDeposits.toStringAsFixed(2)} \$',
+                                Icons.savings,
+                                Colors.blueGrey,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const DepositsOverviewPage(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              _buildStatCard(
+                                'Total caisse',
+                                '${totalCaisse.toStringAsFixed(2)} \$',
+                                Icons.account_balance,
+                                Colors.green,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const ReportPage(),
+                                    ),
+                                  );
+                                },
+                              ),
                             ],
                           );
                         },
@@ -589,6 +711,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     ],
                   ),
                 ),
+      ),
     );
 
 
@@ -596,42 +719,48 @@ class _DashboardPageState extends State<DashboardPage> {
 
   // Helper methods remain the same
   Widget _buildStatCard(
-      String label, String value, IconData icon, Color color) {
+      String label, String value, IconData icon, Color color, {VoidCallback? onTap}) {
     return Card(
       elevation: 5,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
       color: Colors.white,
-      child: Container(
-        padding: const EdgeInsets.all(15),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Icon(icon, size: 35, color: color),
-              ],
-            ),
-            // const SizedBox(height: 10),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: Colors.blueGrey[900],
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(15),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Icon(icon, size: 35, color: color),
+                  if (onTap != null)
+                    Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
+                ],
               ),
-            ),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.blueGrey[600],
+              // const SizedBox(height: 10),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blueGrey[900],
+                ),
               ),
-            ),
-          ],
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.blueGrey[600],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

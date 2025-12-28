@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:gestion_app_mobile/constants.dart';
 import 'package:gestion_app_mobile/app_localizations.dart';
+import 'package:gestion_app_mobile/error_utils.dart';
 
 class ClientPage extends StatefulWidget {
   const ClientPage({Key? key}) : super(key: key);
@@ -64,7 +65,7 @@ class _ClientPageState extends State<ClientPage> {
     } catch (e) {
       setState(() {
         errorType = 'connection';
-        errorDetails = e.toString();
+        errorDetails = ErrorUtils.getUserFriendlyError(e);
         isLoading = false;
       });
     }
@@ -129,9 +130,22 @@ class _ClientPageState extends State<ClientPage> {
                         final client = clients[index];
                         return ListTile(
                           leading: const Icon(Icons.person),
-                          title: Text(client['name'] ?? loc.clientUnknownName),
-                          subtitle: Text(client['email'] ?? ''),
-                          trailing: Text(client['phone'] ?? ''),
+                          title: Text(
+                            client['name'] ?? loc.clientUnknownName,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(
+                            client['email'] ?? '',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: SizedBox(
+                            width: 100,
+                            child: Text(
+                              client['phone'] ?? '',
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.end,
+                            ),
+                          ),
                         );
                       },
                     ),

@@ -9,7 +9,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'Dash_vendeur.dart';
+import 'dash_vendeur.dart';
+import 'package:gestion_app_mobile/error_utils.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -275,7 +276,7 @@ class _LoginPageState extends State<LoginPage> {
       }
     } catch (e) {
       setState(() {
-        _error = "Erreur de connexion ou de décodage JSON: $e";
+        _error = "Erreur de connexion ou de décodage JSON: ${ErrorUtils.getUserFriendlyError(e)}";
       });
     }
   }

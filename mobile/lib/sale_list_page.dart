@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:gestion_app_mobile/constants.dart';
 import 'package:gestion_app_mobile/app_localizations.dart';
+import 'package:gestion_app_mobile/error_utils.dart';
 import 'package:intl/intl.dart';
 import 'package:gestion_app_mobile/detail_sale_page.dart';
 
@@ -74,7 +75,7 @@ class _SaleListPageState extends State<SaleListPage> {
     } catch (e) {
       final loc = AppLocalizations.of(context);
       setState(() {
-        errorMessage = loc.saleListConnectionError(e.toString());
+        errorMessage = loc.saleListConnectionError(ErrorUtils.getUserFriendlyError(e));
         isLoading = false;
       });
     }
@@ -208,9 +209,20 @@ class _SaleListPageState extends State<SaleListPage> {
                                     child: Text(sale.id.toString()),
                                     backgroundColor: Colors.blueGrey[100],
                                   ),
-                                  title: Text(loc.saleListClientLabel(sale.clientName)),
+                                  title: Text(
+                                    loc.saleListClientLabel(sale.clientName),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                   subtitle: Text(loc.saleListDateLabel(sale.date)),
-                                  trailing: Text('${sale.total.toStringAsFixed(2)} \$', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  trailing: SizedBox(
+                                    width: 80,
+                                    child: Text(
+                                      '${sale.total.toStringAsFixed(2)} \$',
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.end,
+                                    ),
+                                  ),
                                   onTap: () {
                                     Navigator.push(
                                       context,
@@ -237,9 +249,20 @@ class _SaleListPageState extends State<SaleListPage> {
                                           child: Text(sale.id.toString()),
                                           backgroundColor: Colors.blueGrey[100],
                                         ),
-                                        title: Text(loc.saleListClientLabel(sale.clientName)),
+                                        title: Text(
+                                          loc.saleListClientLabel(sale.clientName),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                         subtitle: Text(loc.saleListDateLabel(sale.date)),
-                                        trailing: Text('${sale.total.toStringAsFixed(2)} \$', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                        trailing: SizedBox(
+                                          width: 80,
+                                          child: Text(
+                                            '${sale.total.toStringAsFixed(2)} \$',
+                                            style: const TextStyle(fontWeight: FontWeight.bold),
+                                            overflow: TextOverflow.ellipsis,
+                                            textAlign: TextAlign.end,
+                                          ),
+                                        ),
                                         onTap: () {
                                           Navigator.push(
                                             context,

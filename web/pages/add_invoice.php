@@ -12,16 +12,39 @@ $sale_id_selected = isset($_GET['sale_id']) ? intval($_GET['sale_id']) : '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sale_id = $_POST['sale_id'] ?? '';
     if ($sale_id) {
-        $stmt = $pdo->prepare('SELECT total FROM sales WHERE id = ?');
-        $stmt->execute([$sale_id]);
-        $sale = $stmt->fetch();
-        if ($sale) {
-            $amount = $sale['total'];
-            $stmt = $pdo->prepare('INSERT INTO invoices (sale_id, amount, status) VALUES (?, ?, ?)');
-            $stmt->execute([$sale_id, $amount, 'impayée']);
-            $message = 'Facture générée avec succès!';
-        } else {
-            $message = 'Vente introuvable.';
+        try {
+            $pdo->beginTransaction();
+            
+            $stmt = $pdo->prepare('SELECT total, client_id FROM sales WHERE id = ?');
+            $stmt->execute([$sale_id]);
+            $sale = $stmt->fetch();
+            if ($sale) {
+                $amount = $sale['total'];
+                $client_id = $sale['client_id'];
+                
+                // Récupérer les produits de la vente pour marquer les dépôts
+                $productsStmt = $pdo->prepare('SELECT DISTINCT product_id FROM sale_details WHERE sale_id = ?');
+                $productsStmt->execute([$sale_id]);
+                $products = $productsStmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Marquer les dépôts pour ce client et ces produits comme utilisés
+                $updateDepositsStmt = $pdo->prepare('UPDATE deposits SET sale_id = ? WHERE client_id = ? AND product_id = ? AND sale_id IS NULL');
+                foreach ($products as $product) {
+                    $updateDepositsStmt->execute([$sale_id, $client_id, $product['product_id']]);
+                }
+                
+                $stmt = $pdo->prepare('INSERT INTO invoices (sale_id, amount, status) VALUES (?, ?, ?)');
+                $stmt->execute([$sale_id, $amount, 'impayée']);
+                
+                $pdo->commit();
+                $message = 'Facture générée avec succès!';
+            } else {
+                $pdo->rollBack();
+                $message = 'Vente introuvable.';
+            }
+        } catch (PDOException $e) {
+            $pdo->rollBack();
+            $message = 'Erreur lors de la génération de la facture: ' . $e->getMessage();
         }
     } else {
         $message = 'Veuillez sélectionner une vente.';

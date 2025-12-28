@@ -29,21 +29,31 @@ if ($year_filter) {
 }
 $where_sql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 
-// Récupérer les ventes et détails
-$sql = 'SELECT s.id, s.sale_date, d.product_id, d.quantity, d.price as sale_price, p.price as product_price
+// Récupérer les ventes avec bénéfice calculé par vente
+$sql = 'SELECT 
+            s.id as sale_id,
+            s.sale_date,
+            s.total as sale_total,
+            c.name as client_name,
+            SUM((d.price - p.price) * d.quantity) as benefice_vente,
+            SUM(d.price * d.quantity) as chiffre_affaire_vente
         FROM sales s
+        LEFT JOIN clients c ON s.client_id = c.id
         JOIN sale_details d ON s.id = d.sale_id
         JOIN products p ON d.product_id = p.id
-        ' . $where_sql;
+        ' . $where_sql . '
+        GROUP BY s.id, s.sale_date, s.total, c.name
+        ORDER BY s.sale_date DESC, s.id DESC';
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
-$ventes = $stmt->fetchAll();
+$ventes_detail = $stmt->fetchAll();
 
-// Calcul bénéfice
-$benefice_brut = 0; // Renamed to benefice_brut (gross profit)
-foreach ($ventes as $v) {
-    // Bénéfice brut = (prix de vente - prix du produit) * quantité
-    $benefice_brut += ($v['sale_price'] - $v['product_price']) * $v['quantity'];
+// Calcul bénéfice total
+$benefice_brut = 0;
+$total_ventes = 0;
+foreach ($ventes_detail as $v) {
+    $benefice_brut += (float)$v['benefice_vente'];
+    $total_ventes += (float)$v['sale_total'];
 }
 
 // New: Calculate exact profit
@@ -126,6 +136,7 @@ $depenses = $stmt_sortie->fetchColumn() ?: 0;
             <a href="invoices.php"><i class="bi bi-receipt"></i> Factures</a>
             <a href="clients.php"><i class="bi bi-people"></i> Clients</a>
             <a href="reports.php"><i class="bi bi-bar-chart"></i> Rapports</a>
+            <a href="chiffre_affaire.php"><i class="bi bi-cash-stack"></i> Chiffre d'affaire</a>
             <a href="stock.php"><i class="bi bi-archive"></i> Stock</a>
             <a href="benefice.php" class="active"><i class="bi bi-cash-coin"></i> Bénéfice</a>
             <a href="livre_caisse.php"><i class="bi bi-journal-richtext"></i> Livre de caisse</a>
@@ -135,40 +146,130 @@ $depenses = $stmt_sortie->fetchColumn() ?: 0;
             <div class="topbar mb-4">
                 <span><i class="bi bi-cash-coin"></i> Calcul du bénéfice</span>
             </div>
-            <form method="get" class="row g-2 mb-4 align-items-end">
-                <div class="col-auto">
-                    <label for="date" class="form-label mb-0">Par jour :</label>
-                    <input type="date" id="date" name="date" class="form-control" value="<?= htmlspecialchars($date_filter) ?>">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label for="date" class="form-label">Filtrer par jour :</label>
+                            <input type="date" id="date" name="date" class="form-control" value="<?= htmlspecialchars($date_filter) ?>" onchange="clearOtherFilters('date')">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="month" class="form-label">Filtrer par mois :</label>
+                            <input type="month" id="month" name="month" class="form-control" value="<?= htmlspecialchars($month_filter) ?>" onchange="clearOtherFilters('month')">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="year" class="form-label">Filtrer par année :</label>
+                            <input type="number" id="year" name="year" class="form-control" min="2000" max="2100" placeholder="Ex: 2024" value="<?= htmlspecialchars($year_filter) ?>" onchange="clearOtherFilters('year')">
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> Filtrer</button>
+                            <a href="benefice.php" class="btn btn-outline-secondary w-100 mt-2"><i class="bi bi-arrow-counterclockwise"></i> Réinitialiser</a>
+                        </div>
+                    </form>
                 </div>
-                <div class="col-auto">
-                    <label for="month" class="form-label mb-0">Par mois :</label>
-                    <input type="month" id="month" name="month" class="form-control" value="<?= htmlspecialchars($month_filter) ?>">
+            </div>
+            <!-- Résumé des totaux -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card text-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                        <div class="card-body">
+                            <h5 class="card-title">Total des ventes</h5>
+                            <h2 class="mb-0"><?= number_format($total_ventes, 2) ?> $</h2>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-auto">
-                    <label for="year" class="form-label mb-0">Par année :</label>
-                    <input type="number" id="year" name="year" class="form-control" min="2000" max="2100" placeholder="Année" value="<?= htmlspecialchars($year_filter) ?>">
+                <div class="col-md-4">
+                    <div class="card text-center" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+                        <div class="card-body">
+                            <h5 class="card-title">Dépenses</h5>
+                            <h2 class="mb-0"><?= number_format($depenses, 2) ?> $</h2>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-auto">
-                    <label for="depenses" class="form-label mb-0">Dépenses :</label>
-                    <input type="number" id="depenses" name="depenses" class="form-control" step="0.01" value="<?= htmlspecialchars($depenses) ?>" placeholder="Saisir les dépenses" disabled>
+                <div class="col-md-4">
+                    <div class="card text-center" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+                        <div class="card-body">
+                            <h5 class="card-title">Bénéfice brut</h5>
+                            <h2 class="mb-0"><?= number_format($benefice_brut, 2) ?> $</h2>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-auto">
-                    <button type="submit" class="btn btn-outline-primary">Filtrer et Calculer</button>
-                    <a href="benefice.php" class="btn btn-outline-secondary">Réinitialiser</a>
+            </div>
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card text-center" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white;">
+                        <div class="card-body">
+                            <h4 class="card-title">Bénéfice net (après dépenses)</h4>
+                            <h1 class="mb-0" style="font-size: 3rem;"><?= number_format($benefice_exact, 2) ?> $</h1>
+                        </div>
+                    </div>
                 </div>
-            </form>
-            <div class="benefice-box">
-                <div>Bénéfice brut pour la période sélectionnée :</div>
-                <div class="benefice-value" style="color: #007bff;">
-                    <?= number_format($benefice_brut, 2) ?> $
+            </div>
+
+            <!-- Tableau des ventes -->
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Détail des ventes (<?= count($ventes_detail) ?> vente(s))</h5>
                 </div>
-                <div class="mt-3">Dépenses déclarées :</div>
-                <div class="benefice-value" style="color: #dc3545;">
-                    <?= number_format($depenses, 2) ?> $
-                </div>
-                <div class="mt-3">Bénéfice Exact :</div>
-                <div class="benefice-value">
-                    <?= number_format($benefice_exact, 2) ?> $
+                <div class="card-body">
+                    <?php if (empty($ventes_detail)): ?>
+                        <div class="alert alert-info text-center">
+                            <i class="bi bi-info-circle"></i> Aucune vente trouvée pour la période sélectionnée.
+                        </div>
+                    <?php else: ?>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>ID Vente</th>
+                                        <th>Date</th>
+                                        <th>Client</th>
+                                        <th class="text-end">Montant vente</th>
+                                        <th class="text-end">Bénéfice</th>
+                                        <th class="text-end">% Bénéfice</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($ventes_detail as $vente): ?>
+                                        <?php 
+                                        $benefice = (float)$vente['benefice_vente'];
+                                        $montant = (float)$vente['sale_total'];
+                                        $pourcentage = $montant > 0 ? ($benefice / $montant) * 100 : 0;
+                                        ?>
+                                        <tr>
+                                            <td><strong>#<?= $vente['sale_id'] ?></strong></td>
+                                            <td><?= date('d/m/Y H:i', strtotime($vente['sale_date'])) ?></td>
+                                            <td><?= htmlspecialchars($vente['client_name'] ?? 'N/A') ?></td>
+                                            <td class="text-end"><?= number_format($montant, 2) ?> $</td>
+                                            <td class="text-end">
+                                                <span class="badge <?= $benefice >= 0 ? 'bg-success' : 'bg-danger' ?>" style="font-size: 1rem; padding: 8px 12px;">
+                                                    <?= number_format($benefice, 2) ?> $
+                                                </span>
+                                            </td>
+                                            <td class="text-end">
+                                                <span class="badge <?= $pourcentage >= 0 ? 'bg-info' : 'bg-danger' ?>" style="font-size: 0.9rem; padding: 6px 10px;">
+                                                    <?= number_format($pourcentage, 2) ?>%
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                                <tfoot class="table-dark">
+                                    <tr>
+                                        <th colspan="3" class="text-end">TOTAL :</th>
+                                        <th class="text-end"><?= number_format($total_ventes, 2) ?> $</th>
+                                        <th class="text-end"><?= number_format($benefice_brut, 2) ?> $</th>
+                                        <th class="text-end">
+                                            <?php 
+                                            $pourcentage_total = $total_ventes > 0 ? ($benefice_brut / $total_ventes) * 100 : 0;
+                                            echo number_format($pourcentage_total, 2) . '%';
+                                            ?>
+                                        </th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </main>
@@ -192,6 +293,20 @@ function toggleSidebar(open) {
 document.querySelectorAll('#sidebarMenu a').forEach(a => {
     a.addEventListener('click', () => toggleSidebar(false));
 });
+
+// Fonction pour effacer les autres filtres quand on en sélectionne un
+function clearOtherFilters(selectedFilter) {
+    if (selectedFilter === 'date') {
+        document.getElementById('month').value = '';
+        document.getElementById('year').value = '';
+    } else if (selectedFilter === 'month') {
+        document.getElementById('date').value = '';
+        document.getElementById('year').value = '';
+    } else if (selectedFilter === 'year') {
+        document.getElementById('date').value = '';
+        document.getElementById('month').value = '';
+    }
+}
 </script>
 </body>
 </html>

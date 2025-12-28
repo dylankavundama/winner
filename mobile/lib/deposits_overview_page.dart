@@ -1,12 +1,20 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show ByteData, rootBundle;
 import 'package:gestion_app_mobile/client_model.dart';
 import 'package:gestion_app_mobile/constants.dart';
 import 'package:gestion_app_mobile/deposit_page.dart';
+import 'package:gestion_app_mobile/additional_deposit_page.dart';
+import 'package:gestion_app_mobile/deposits_history_page.dart';
+import 'package:gestion_app_mobile/product_model.dart';
 import 'package:gestion_app_mobile/app_localizations.dart';
+import 'package:gestion_app_mobile/error_utils.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:sunmi_printer_plus/enums.dart';
+import 'package:sunmi_printer_plus/sunmi_printer_plus.dart';
 
 class DepositsOverviewPage extends StatefulWidget {
   const DepositsOverviewPage({Key? key}) : super(key: key);
@@ -64,14 +72,18 @@ class _DepositsOverviewPageState extends State<DepositsOverviewPage> {
         final data = jsonDecode(response.body);
         if (data is Map && data['success'] == true) {
           final List<dynamic> deposits = data['deposits'] ?? [];
+          
+          // Grouper les dépôts par client et produit pour calculer correctement le reste à payer
+          final Map<String, Map<String, dynamic>> clientProductTotals = {};
+          
           for (final d in deposits) {
             final map = d as Map<String, dynamic>;
             final int clientId =
-                int.tryParse('${map['client_id']}') ?? 0; // nullable safe
+                int.tryParse('${map['client_id']}') ?? 0;
             if (clientId == 0) continue;
             final String name = (map['client_name'] ?? '') as String;
             final int productId =
-                int.tryParse('${map['product_id']}') ?? 0; // nullable safe
+                int.tryParse('${map['product_id']}') ?? 0;
 
             // amount peut venir de l'API en String ou en nombre -> on normalise en double
             final dynamic rawAmount = map['amount'];
@@ -79,28 +91,43 @@ class _DepositsOverviewPageState extends State<DepositsOverviewPage> {
                 ? rawAmount.toDouble()
                 : double.tryParse('$rawAmount') ?? 0.0;
 
-            // Prix du produit pour calculer le reste à payer
-            final double? productPrice = productPrices[productId];
-            double remainingForThisDeposit = 0.0;
-            if (productPrice != null) {
-              remainingForThisDeposit = productPrice - amount;
-              if (remainingForThisDeposit < 0) {
-                remainingForThisDeposit = 0.0;
-              }
-            }
-
+            // Clé unique pour client+produit
+            final String key = '$clientId-$productId';
+            
+            clientProductTotals.putIfAbsent(key, () {
+              return {
+                'client_id': clientId,
+                'client_name': name,
+                'product_id': productId,
+                'total': 0.0,
+                'product_price': productPrices[productId] ?? 0.0,
+              };
+            });
+            clientProductTotals[key]!['total'] =
+                (clientProductTotals[key]!['total'] as double) + amount;
+          }
+          
+          // Maintenant, calculer le reste à payer pour chaque client+produit et agréger par client
+          for (final entry in clientProductTotals.entries) {
+            final clientId = entry.value['client_id'] as int;
+            final clientName = entry.value['client_name'] as String;
+            final totalDeposits = entry.value['total'] as double;
+            final productPrice = entry.value['product_price'] as double;
+            
+            // Calculer le reste à payer pour ce client+produit
+            final double remaining = (productPrice - totalDeposits).clamp(0, double.infinity);
+            
             _clientTotals.putIfAbsent(clientId, () {
               return {
-                'client': Client(id: clientId, name: name),
+                'client': Client(id: clientId, name: clientName),
                 'total': 0.0,
                 'remaining': 0.0,
               };
             });
             _clientTotals[clientId]!['total'] =
-                (_clientTotals[clientId]!['total'] as double) + amount;
+                (_clientTotals[clientId]!['total'] as double) + totalDeposits;
             _clientTotals[clientId]!['remaining'] =
-                (_clientTotals[clientId]!['remaining'] as double) +
-                    remainingForThisDeposit;
+                (_clientTotals[clientId]!['remaining'] as double) + remaining;
           }
         } else {
           final loc = AppLocalizations.of(context);
@@ -112,7 +139,7 @@ class _DepositsOverviewPageState extends State<DepositsOverviewPage> {
       }
     } catch (e) {
       final loc = AppLocalizations.of(context);
-      _error = loc.depositsOverviewConnectionError(e.toString());
+      _error = loc.depositsOverviewConnectionError(ErrorUtils.getUserFriendlyError(e));
     } finally {
       if (mounted) {
         setState(() {
@@ -133,6 +160,19 @@ class _DepositsOverviewPageState extends State<DepositsOverviewPage> {
       appBar: AppBar(
         title: Text(loc.depositsOverviewTitle),
         backgroundColor: Colors.blueGrey[800],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'Historique des dépôts',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const DepositsHistoryPage()),
+              );
+            },
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: _fetchDeposits,
@@ -215,7 +255,7 @@ class _DepositsOverviewPageState extends State<DepositsOverviewPage> {
                                   loc.depositsOverviewRemainingTotal + _currencyFormatter.format(remaining),
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: Colors.blueGrey[800],
+                                    color: Colors.green[700],
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -282,6 +322,169 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
     _fetchHistory();
   }
 
+  Future<Product?> _getProduct(int productId, String productName) async {
+    try {
+      // Récupérer les informations complètes du produit
+      final response = await http.get(Uri.parse(ApiConstants.productsApi));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map && data['success'] == true && data['products'] is List) {
+          final products = (data['products'] as List)
+              .map((e) => Product.fromJson(e as Map<String, dynamic>))
+              .toList();
+          return products.firstWhere(
+            (p) => p.id == productId,
+            orElse: () => Product(
+              id: productId,
+              name: productName,
+              prixVente: 0.0,
+              quantity: 0,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // En cas d'erreur, créer un produit minimal
+      return Product(
+        id: productId,
+        name: productName,
+        prixVente: 0.0,
+        quantity: 0,
+      );
+    }
+    return null;
+  }
+
+  Future<void> _openAdditionalDepositPage(int productId, String productName) async {
+    final product = await _getProduct(productId, productName);
+    if (product != null) {
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AdditionalDepositPage(
+            client: widget.client,
+            product: product,
+          ),
+        ),
+      );
+      if (result == true) {
+        await _fetchHistory();
+      }
+    }
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+      ),
+    );
+  }
+
+  /// Imprime un reçu de dépôt sur l'imprimante Sunmi
+  Future<void> _printDepositReceipt({
+    required Client client,
+    required Product product,
+    required double amount,
+    required DateTime date,
+    required bool stockReserved,
+    int? depositId,
+  }) async {
+    final loc = AppLocalizations.of(context);
+    bool? isConnected = await SunmiPrinter.bindingPrinter();
+    if (isConnected != true) {
+      _showSnackBar(
+        loc.depositPrinterError,
+        isError: true,
+      );
+      return;
+    }
+
+    try {
+      await SunmiPrinter.initPrinter();
+
+      // Logo si disponible
+      try {
+        final ByteData logoBytes = await rootBundle.load('assets/logo.png');
+        final Uint8List logoData = logoBytes.buffer.asUint8List();
+        await SunmiPrinter.printImage(logoData);
+        await SunmiPrinter.lineWrap(1);
+      } catch (_) {
+        // Logo optionnel
+      }
+
+      final String dateStr = DateFormat('yyyy-MM-dd HH:mm').format(date);
+
+      await SunmiPrinter.setAlignment(SunmiPrintAlign.CENTER);
+      await SunmiPrinter.bold();
+      await SunmiPrinter.setFontSize(SunmiFontSize.LG);
+      await SunmiPrinter.printText(loc.depositReceiptTitle);
+      await SunmiPrinter.resetBold();
+      await SunmiPrinter.setFontSize(SunmiFontSize.MD);
+      await SunmiPrinter.lineWrap(1);
+
+      if (depositId != null) {
+        await SunmiPrinter.printText(loc.depositReceiptNumber(depositId));
+      }
+      await SunmiPrinter.printText(loc.depositReceiptDate(dateStr));
+      await SunmiPrinter.line();
+
+      await SunmiPrinter.setAlignment(SunmiPrintAlign.LEFT);
+      await SunmiPrinter.bold();
+      await SunmiPrinter.printText(loc.depositReceiptClient);
+      await SunmiPrinter.resetBold();
+      await SunmiPrinter.printText(loc.depositReceiptClientName(client.name));
+      await SunmiPrinter.lineWrap(1);
+
+      await SunmiPrinter.bold();
+      await SunmiPrinter.printText(loc.depositReceiptProduct);
+      await SunmiPrinter.resetBold();
+      await SunmiPrinter.printText(product.name);
+      await SunmiPrinter.lineWrap(1);
+
+      await SunmiPrinter.bold();
+      await SunmiPrinter.printText(loc.depositReceiptAmount);
+      await SunmiPrinter.resetBold();
+      await SunmiPrinter.printText('${amount.toStringAsFixed(2)} \$');
+      await SunmiPrinter.lineWrap(1);
+
+      await SunmiPrinter.bold();
+      await SunmiPrinter.printText(loc.depositReceiptStockStatus);
+      await SunmiPrinter.resetBold();
+      // Vérifier si le produit est en stock (quantity <= 0)
+      String stockStatusText;
+      if (product.quantity <= 0) {
+        stockStatusText = loc.depositReceiptStockEmpty;
+      } else if (stockReserved) {
+        stockStatusText = loc.depositReceiptReserved;
+      } else {
+        stockStatusText = loc.depositReceiptNotReserved;
+      }
+      await SunmiPrinter.printText(stockStatusText);
+      await SunmiPrinter.lineWrap(2);
+
+      await SunmiPrinter.setFontSize(SunmiFontSize.SM);
+      await SunmiPrinter.printText(loc.depositReceiptProof);
+      await SunmiPrinter.lineWrap(2);
+
+      await SunmiPrinter.setAlignment(SunmiPrintAlign.CENTER);
+      await SunmiPrinter.setFontSize(SunmiFontSize.MD);
+      await SunmiPrinter.printText(loc.depositReceiptThanks);
+      await SunmiPrinter.lineWrap(3);
+
+      await SunmiPrinter.cut();
+      _showSnackBar('Reçu imprimé avec succès');
+    } catch (e) {
+      final loc = AppLocalizations.of(context);
+      _showSnackBar(loc.depositPrintError(e.toString()), isError: true);
+    } finally {
+      try {
+        await SunmiPrinter.unbindingPrinter();
+      } catch (_) {}
+    }
+  }
+
   Future<void> _fetchHistory() async {
     setState(() {
       _loading = true;
@@ -322,7 +525,7 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
       }
     } catch (e) {
       final loc = AppLocalizations.of(context);
-      _error = loc.depositsOverviewConnectionError(e.toString());
+      _error = loc.depositsOverviewConnectionError(ErrorUtils.getUserFriendlyError(e));
     } finally {
       if (mounted) {
         setState(() {
@@ -387,10 +590,13 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
                               : double.tryParse('$rawAmount') ?? 0.0;
                           final String productName =
                               (d['product_name'] ?? '') as String;
+                          final int productId =
+                              int.tryParse('${d['product_id'] ?? 0}') ?? 0;
                           final String date =
                               (d['deposit_date'] ?? '') as String;
                           final bool reserved =
                               (d['stock_reserved'] ?? 0) == 1;
+                          final int? depositId = int.tryParse('${d['id'] ?? ''}');
                           return Card(
                             child: ListTile(
                               leading: Icon(
@@ -410,38 +616,88 @@ class _DepositHistoryPageState extends State<DepositHistoryPage> {
                                   Text(date),
                                 ],
                               ),
-                              trailing: Text(
-                                reserved ? loc.depositReserved : loc.depositOutOfStock,
-                                style: TextStyle(
-                                  color: reserved
-                                      ? Colors.green
-                                      : Colors.orange[800],
-                                  fontWeight: FontWeight.w600,
-                                ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.print, color: Colors.blueGrey),
+                                    tooltip: 'Imprimer le reçu',
+                                    onPressed: () async {
+                                      // Récupérer le produit pour l'impression
+                                      final product = await _getProduct(productId, productName);
+                                      if (product != null) {
+                                        // Parser la date du dépôt
+                                        DateTime depositDate;
+                                        try {
+                                          depositDate = DateTime.parse(date);
+                                        } catch (_) {
+                                          depositDate = DateTime.now();
+                                        }
+                                        await _printDepositReceipt(
+                                          client: widget.client,
+                                          product: product,
+                                          amount: amount,
+                                          date: depositDate,
+                                          stockReserved: reserved,
+                                          depositId: depositId,
+                                        );
+                                      } else {
+                                        _showSnackBar('Impossible de récupérer les informations du produit', isError: true);
+                                      }
+                                    },
+                                  ),
+                                  Text(
+                                    reserved ? loc.depositReserved : loc.depositOutOfStock,
+                                    style: TextStyle(
+                                      color: reserved
+                                          ? Colors.green
+                                          : Colors.orange[800],
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
+                              onTap: () async {
+                                // Ouvrir la page de dépôt supplémentaire pour ce produit
+                                if (productId > 0) {
+                                  await _openAdditionalDepositPage(productId, productName);
+                                }
+                              },
                             ),
                           );
                         }),
                       const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.add),
-                          label: Text(loc.depositsOverviewAddButton),
-                          onPressed: () async {
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    DepositPage(initialClient: widget.client),
-                              ),
-                            );
-                            if (result == true) {
-                              await _fetchHistory();
-                            }
-                          },
+                      if (_history.isNotEmpty)
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.add),
+                            label: Text(loc.depositsOverviewAddButton),
+                            onPressed: () async {
+                              // Utiliser le premier produit de l'historique pour le dépôt supplémentaire
+                              final firstDeposit = _history.first;
+                              final int productId =
+                                  int.tryParse('${firstDeposit['product_id'] ?? 0}') ?? 0;
+                              final String productName =
+                                  (firstDeposit['product_name'] ?? '') as String;
+                              if (productId > 0) {
+                                await _openAdditionalDepositPage(productId, productName);
+                              } else {
+                                // Si pas de produit ID, utiliser l'ancienne page
+                                final result = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        DepositPage(initialClient: widget.client),
+                                  ),
+                                );
+                                if (result == true) {
+                                  await _fetchHistory();
+                                }
+                              }
+                            },
+                          ),
                         ),
-                      ),
                     ],
                   ),
       ),
