@@ -110,7 +110,7 @@ document.getElementById('togglePassword').addEventListener('click', function () 
 });
 </script>
 
-<center><p>Copyright 2025 Winner Company. Tous droits réservés. <h6>From Next Technologie</h6.</p></center>
+<center><p>Copyright 2025 Winner Phone Trading. Tous droits réservés. <h6>From Next Technologie</h6.</p></center>
 
 
 </body>

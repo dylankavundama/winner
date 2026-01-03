@@ -328,7 +328,7 @@ try {
     <div class="facture-box">
         <div class="facture-header">
             <img src="../assets/logo.png" alt="Company Logo">
-            <h1>Winner Company</h1>
+            <h1>Winner Phone Trading</h1>
             <h2>Facture #<?= htmlspecialchars($invoice['id']) ?></h2>
             <p>Date : <?= htmlspecialchars($invoice['invoice_date']) ?> | 
                Statut : <span class="status-badge <?= $invoice['status'] === 'payée' ? 'status-paid' : 'status-unpaid' ?>"><?= htmlspecialchars($invoice['status']) ?></span></p>

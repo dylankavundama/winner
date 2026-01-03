@@ -279,8 +279,13 @@ class _DashboardPageVendeurState extends State<DashboardPageVendeur> {
     final loc = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(loc.vendorDashboardTitle),
+        title: Image.asset(
+          'assets/logo.png',
+          height: 100,
+          fit: BoxFit.contain,
+        ),
         backgroundColor: Colors.blueGrey[800],
+        centerTitle: true,
         actions: [
           // Indicateur d'actualisation automatique
           if (_isRefreshing)

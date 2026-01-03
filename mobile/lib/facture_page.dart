@@ -120,7 +120,7 @@ class _FacturePageState extends State<FacturePage> {
                 Center(
                   child: Column(
                     children: [
-                      const Text('Winner Company',
+                      const Text('Winner Phone Trading',
                           style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
@@ -409,10 +409,10 @@ class _FacturePageState extends State<FacturePage> {
 
       // En-tête de l'entreprise
       await SunmiPrinter.setAlignment(SunmiPrintAlign.CENTER);
-      await SunmiPrinter.printText('Winner Company');
+      await SunmiPrinter.printText('Winner Phone Trading');
       await SunmiPrinter.bold();
       await SunmiPrinter.setFontSize(SunmiFontSize.XL);
-      await SunmiPrinter.printText('Winner Company');
+      await SunmiPrinter.printText('Winner Phone Trading');
       await SunmiPrinter.resetBold();
       await SunmiPrinter.setFontSize(SunmiFontSize.MD);
       await SunmiPrinter.lineWrap(1);

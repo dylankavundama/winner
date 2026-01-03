@@ -33,7 +33,7 @@ class AppLocalizations {
       'language_continue': 'Continuer',
 
       // Dashboard (admin)
-      'dashboard_title_pos': 'Tableau de bord du POS',
+      'dashboard_title_pos': 'Winner Phone Trading',
       'dashboard_menu_clients': 'Clients',
       'dashboard_menu_products': 'Produits',
       'dashboard_menu_sales': 'Ventes',

@@ -225,13 +225,10 @@ class _DashboardPageState extends State<DashboardPage> {
         tooltip: loc.dashboardFabNewSaleTooltip,
       ),
       appBar: AppBar(
-        title: Text(
-          loc.dashboardTitlePos,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-            color: Colors.white,
-          ),
+        title: Image.asset(
+          'assets/logo.png',
+          height: 130,
+          fit: BoxFit.cover,
         ),
         backgroundColor: Colors.blueGrey[800],
         elevation: 4,
@@ -259,7 +256,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   Image.asset('assets/logo.png', height: 100),
                   // SizedBox(height: 10),
                   const Text(
-                    'Winner Company',
+                    'Winner Phone Trading',
                     style: TextStyle(
                       color: Colors.black,
                       fontSize: 24,
@@ -812,9 +809,9 @@ class _DashboardPageState extends State<DashboardPage> {
           children: [
             CircleAvatar(
               radius: 30,
-              backgroundColor: Colors.white,
-              child: Icon(Icons.account_circle,
-                  size: 50, color: Colors.blueGrey[700]),
+              
+              backgroundImage: NetworkImage('https://wmahub.com/pro.jpg'),
+            //   
             ),
             const SizedBox(width: 20),
             Column(
