@@ -13,14 +13,23 @@ class Sale {
   final double total;
   final String date;
 
-  Sale({required this.id, required this.clientName, required this.total, required this.date});
+  final String status;
+  Sale(
+      {required this.id,
+      required this.clientName,
+      required this.total,
+      required this.date,
+      required this.status});
 
   factory Sale.fromJson(Map<String, dynamic> json) {
     return Sale(
       id: json['id'],
       clientName: json['client_name'] ?? '',
-      total: (json['total'] is num) ? (json['total'] as num).toDouble() : double.tryParse(json['total'].toString()) ?? 0.0,
+      total: (json['total'] is num)
+          ? (json['total'] as num).toDouble()
+          : double.tryParse(json['total'].toString()) ?? 0.0,
       date: json['sale_date'] ?? '',
+      status: json['status'] ?? 'payée',
     );
   }
 }
@@ -50,12 +59,14 @@ class _SaleListPageState extends State<SaleListPage> {
       errorMessage = null;
     });
     try {
-      final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/sales.php'));
+      final response =
+          await http.get(Uri.parse('${ApiConstants.baseUrl}/sales.php'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true && data['sales'] is List) {
           setState(() {
-            sales = (data['sales'] as List).map((e) => Sale.fromJson(e)).toList();
+            sales =
+                (data['sales'] as List).map((e) => Sale.fromJson(e)).toList();
             isLoading = false;
           });
         } else {
@@ -75,7 +86,8 @@ class _SaleListPageState extends State<SaleListPage> {
     } catch (e) {
       final loc = AppLocalizations.of(context);
       setState(() {
-        errorMessage = loc.saleListConnectionError(ErrorUtils.getUserFriendlyError(e));
+        errorMessage =
+            loc.saleListConnectionError(ErrorUtils.getUserFriendlyError(e));
         isLoading = false;
       });
     }
@@ -138,8 +150,7 @@ class _SaleListPageState extends State<SaleListPage> {
       map.putIfAbsent(key, () => []).add(sale);
     }
     // Trie les années par ordre décroissant
-    final sortedKeys = map.keys.toList()
-      ..sort((a, b) => b.compareTo(a));
+    final sortedKeys = map.keys.toList()..sort((a, b) => b.compareTo(a));
     return {for (var k in sortedKeys) k: map[k]!};
   }
 
@@ -156,8 +167,10 @@ class _SaleListPageState extends State<SaleListPage> {
             onSelected: _setSortMode,
             itemBuilder: (context) => [
               PopupMenuItem(value: 'date', child: Text(loc.saleListSortByDate)),
-              PopupMenuItem(value: 'mois', child: Text(loc.saleListSortByMonth)),
-              PopupMenuItem(value: 'annee', child: Text(loc.saleListSortByYear)),
+              PopupMenuItem(
+                  value: 'mois', child: Text(loc.saleListSortByMonth)),
+              PopupMenuItem(
+                  value: 'annee', child: Text(loc.saleListSortByYear)),
             ],
           ),
         ],
@@ -201,7 +214,8 @@ class _SaleListPageState extends State<SaleListPage> {
                       child: sortMode == 'date'
                           ? ListView.separated(
                               itemCount: sortedSales.length,
-                              separatorBuilder: (context, index) => const Divider(height: 1),
+                              separatorBuilder: (context, index) =>
+                                  const Divider(height: 1),
                               itemBuilder: (context, index) {
                                 final sale = sortedSales[index];
                                 return ListTile(
@@ -213,21 +227,39 @@ class _SaleListPageState extends State<SaleListPage> {
                                     loc.saleListClientLabel(sale.clientName),
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  subtitle: Text(loc.saleListDateLabel(sale.date)),
+                                  subtitle:
+                                      Text(loc.saleListDateLabel(sale.date)),
                                   trailing: SizedBox(
-                                    width: 80,
-                                    child: Text(
-                                      '${sale.total.toStringAsFixed(2)} \$',
-                                      style: const TextStyle(fontWeight: FontWeight.bold),
-                                      overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.end,
+                                    width: 120,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          '${sale.total.toStringAsFixed(2)} \$',
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Icon(
+                                          sale.status.toLowerCase() == 'payée'
+                                              ? Icons.check_circle
+                                              : Icons.error_outline,
+                                          color: sale.status.toLowerCase() ==
+                                                  'payée'
+                                              ? Colors.green
+                                              : Colors.red,
+                                          size: 16,
+                                        ),
+                                      ],
                                     ),
                                   ),
                                   onTap: () {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => DetailSalePage(saleId: sale.id),
+                                        builder: (context) =>
+                                            DetailSalePage(saleId: sale.id),
                                       ),
                                     );
                                   },
@@ -236,12 +268,18 @@ class _SaleListPageState extends State<SaleListPage> {
                             )
                           : ListView(
                               children: [
-                                for (final entry in (sortMode == 'mois' ? groupedByMonth(context).entries : groupedByYear(context).entries)) ...[
+                                for (final entry in (sortMode == 'mois'
+                                    ? groupedByMonth(context).entries
+                                    : groupedByYear(context).entries)) ...[
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 8.0, horizontal: 16.0),
                                     child: Text(
                                       entry.key,
-                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueGrey),
+                                      style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.blueGrey),
                                     ),
                                   ),
                                   ...entry.value.map((sale) => ListTile(
@@ -250,15 +288,18 @@ class _SaleListPageState extends State<SaleListPage> {
                                           backgroundColor: Colors.blueGrey[100],
                                         ),
                                         title: Text(
-                                          loc.saleListClientLabel(sale.clientName),
+                                          loc.saleListClientLabel(
+                                              sale.clientName),
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                        subtitle: Text(loc.saleListDateLabel(sale.date)),
+                                        subtitle: Text(
+                                            loc.saleListDateLabel(sale.date)),
                                         trailing: SizedBox(
                                           width: 80,
                                           child: Text(
                                             '${sale.total.toStringAsFixed(2)} \$',
-                                            style: const TextStyle(fontWeight: FontWeight.bold),
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold),
                                             overflow: TextOverflow.ellipsis,
                                             textAlign: TextAlign.end,
                                           ),
@@ -267,7 +308,9 @@ class _SaleListPageState extends State<SaleListPage> {
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                              builder: (context) => DetailSalePage(saleId: sale.id),
+                                              builder: (context) =>
+                                                  DetailSalePage(
+                                                      saleId: sale.id),
                                             ),
                                           );
                                         },
@@ -279,4 +322,4 @@ class _SaleListPageState extends State<SaleListPage> {
                     ),
     );
   }
-} 
+}

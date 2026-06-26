@@ -23,7 +23,7 @@ try {
     }
     $where_sql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 
-    // Récupérer les ventes avec bénéfice calculé par vente
+    // Récupérer les ventes PAYÉES avec bénéfice calculé par vente
     $sql = 'SELECT 
                 s.id as sale_id,
                 s.sale_date,
@@ -32,10 +32,11 @@ try {
                 SUM((d.price - p.price) * d.quantity) as benefice_vente,
                 SUM(d.price * d.quantity) as chiffre_affaire_vente
             FROM sales s
+            JOIN invoices i ON s.id = i.sale_id
             LEFT JOIN clients c ON s.client_id = c.id
             JOIN sale_details d ON s.id = d.sale_id
             JOIN products p ON d.product_id = p.id
-            ' . $where_sql . '
+            WHERE i.status = "payée" ' . ($where ? ('AND ' . implode(' AND ', $where)) : '') . '
             GROUP BY s.id, s.sale_date, s.total, c.name
             ORDER BY s.sale_date DESC, s.id DESC';
     $stmt = $pdo->prepare($sql);

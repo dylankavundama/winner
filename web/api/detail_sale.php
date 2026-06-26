@@ -10,9 +10,10 @@ $sale_id = intval($_GET['id']);
 
 try {
     // Récupérer la vente et le client
-    $stmt = $pdo->prepare('SELECT s.id, s.sale_date as date, s.total, c.name, c.phone, c.address
+    $stmt = $pdo->prepare('SELECT s.id, s.sale_date as date, s.total, c.name, c.phone, c.address, i.status
                           FROM sales s
                           LEFT JOIN clients c ON s.client_id = c.id
+                          LEFT JOIN invoices i ON s.id = i.sale_id
                           WHERE s.id = ?');
     $stmt->execute([$sale_id]);
     $sale = $stmt->fetch(PDO::FETCH_ASSOC);

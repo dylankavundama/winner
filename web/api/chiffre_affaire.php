@@ -13,6 +13,8 @@ try {
         SELECT IFNULL(SUM(sd.price * sd.quantity), 0) AS total_ca
         FROM sale_details sd
         INNER JOIN sales s ON sd.sale_id = s.id
+        INNER JOIN invoices i ON s.id = i.sale_id
+        WHERE i.status = 'payée'
     ";
     
     $params = [];

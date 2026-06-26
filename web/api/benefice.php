@@ -22,12 +22,13 @@ if ($year_filter) {
 }
 $where_sql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 
-// Récupérer les ventes et détails
+// Récupérer les ventes et détails des factures PAYÉES
 $sql = 'SELECT s.id, s.sale_date, d.product_id, d.quantity, d.price as sale_price, p.price as product_price
         FROM sales s
+        JOIN invoices i ON s.id = i.sale_id
         JOIN sale_details d ON s.id = d.sale_id
         JOIN products p ON d.product_id = p.id
-        ' . $where_sql;
+        WHERE i.status = "payée" ' . ($where ? ('AND ' . implode(' AND ', $where)) : '');
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $ventes = $stmt->fetchAll();

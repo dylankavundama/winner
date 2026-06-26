@@ -80,11 +80,12 @@ try {
         }
     }
 
-    // Insérer la facture avec statut "payée" par défaut
+    // Insérer la facture avec statut spécifié ou "payée" par défaut
+    $status = isset($input['status']) ? $input['status'] : 'payée';
 
-    $stmt = $pdo->prepare('INSERT INTO invoices (sale_id, amount, status) VALUES (?, ?, "payée")');
+    $stmt = $pdo->prepare('INSERT INTO invoices (sale_id, amount, status) VALUES (?, ?, ?)');
 
-    $stmt->execute([$sale_id, $sale['total']]);
+    $stmt->execute([$sale_id, $sale['total'], $status]);
 
     $invoice_id = $pdo->lastInsertId();
 

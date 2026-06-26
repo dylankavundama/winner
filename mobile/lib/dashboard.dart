@@ -8,8 +8,8 @@ import 'package:gestion_app_mobile/main.dart';
 import 'package:gestion_app_mobile/product_page.dart';
 import 'package:gestion_app_mobile/report_page.dart';
 import 'package:gestion_app_mobile/sale_list_page.dart';
-import 'package:gestion_app_mobile/chiffre_affaire_page.dart';
- 
+import 'package:gestion_app_mobile/dettes_page.dart';
+
 import 'package:gestion_app_mobile/vente_page.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -22,7 +22,6 @@ import 'package:gestion_app_mobile/app_localizations.dart';
 import 'package:gestion_app_mobile/language_selection_page.dart';
 import 'package:gestion_app_mobile/error_utils.dart';
 import 'sortie_page.dart';
- 
 
 class DashboardPage extends StatefulWidget {
   final String loggedInUsername;
@@ -47,6 +46,7 @@ class _DashboardPageState extends State<DashboardPage> {
   double totalChiffreAffaire = 0.0;
   double totalDeposits = 0.0;
   double totalCaisse = 0.0;
+  double totalDette = 0.0;
   List<String> chartMonths = [];
   List<double> chartTotals = [];
 
@@ -137,10 +137,9 @@ class _DashboardPageState extends State<DashboardPage> {
               (data['total_sales_amount'] as num?)?.toDouble() ?? 0.0;
           totalChiffreAffaire =
               (data['total_chiffre_affaire'] as num?)?.toDouble() ?? 0.0;
-          totalDeposits =
-              (data['total_deposits'] as num?)?.toDouble() ?? 0.0;
-          totalCaisse =
-              (data['total_caisse'] as num?)?.toDouble() ?? 0.0;
+          totalDeposits = (data['total_deposits'] as num?)?.toDouble() ?? 0.0;
+          totalCaisse = (data['total_caisse'] as num?)?.toDouble() ?? 0.0;
+          totalDette = (data['total_dette'] as num?)?.toDouble() ?? 0.0;
           errorMessage = null; // Réinitialiser l'erreur en cas de succès
           isLoading = false;
         });
@@ -160,7 +159,8 @@ class _DashboardPageState extends State<DashboardPage> {
       }
     } catch (e) {
       setState(() {
-        errorMessage = "Erreur de connexion au serveur: ${ErrorUtils.getUserFriendlyError(e)}";
+        errorMessage =
+            "Erreur de connexion au serveur: ${ErrorUtils.getUserFriendlyError(e)}";
         isLoading = false;
       });
     }
@@ -297,6 +297,16 @@ class _DashboardPageState extends State<DashboardPage> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.money_off, color: Colors.red),
+              title: const Text("Dettes / Impayés"),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const DettesPage()),
+                );
+              },
+            ),
+            ListTile(
               leading: Icon(Icons.receipt_long_outlined),
               title: Text(loc.dashboardMenuInvoices),
               onTap: () {
@@ -324,16 +334,6 @@ class _DashboardPageState extends State<DashboardPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const BeneficePage()),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.trending_up),
-              title: Text(loc.dashboardMenuChiffreAffaire),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ChiffreAffairePage()),
                 );
               },
             ),
@@ -378,7 +378,8 @@ class _DashboardPageState extends State<DashboardPage> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => StockOutHistoryPage()),
+                  MaterialPageRoute(
+                      builder: (context) => StockOutHistoryPage()),
                 );
               },
             ),
@@ -426,7 +427,8 @@ class _DashboardPageState extends State<DashboardPage> {
                         child: Text(
                           errorMessage!,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.red, fontSize: 18),
+                          style:
+                              const TextStyle(color: Colors.red, fontSize: 18),
                         ),
                       ),
                     ),
@@ -435,288 +437,295 @@ class _DashboardPageState extends State<DashboardPage> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(20.0),
                     child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildUserInfoCard(widget.loggedInUsername),
-                      const SizedBox(height: 30),
-                      Text(
-                        loc.dashboardKeyStatsTitle,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blueGrey,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          int crossAxisCount;
-
-                          if (constraints.maxWidth >= 900) {
-                            // Grands écrans (tablettes paysage, grands iPad)
-                            crossAxisCount = 4;
-                          } else if (constraints.maxWidth >= 600) {
-                            // Écrans moyens (petites tablettes, grands smartphones)
-                            crossAxisCount = 3;
-                          } else {
-                            // Petits écrans (smartphones)
-                            crossAxisCount = 2;
-                          }
-
-                          return GridView.count(
-                            crossAxisCount: crossAxisCount,
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            mainAxisSpacing: 20,
-                            crossAxisSpacing: 20,
-                            // Ratio adapté pour éviter des cartes trop hautes sur tablette
-                            childAspectRatio:
-                                constraints.maxWidth >= 600 ? 1.6 : 1.3,
-                            children: [
-                              _buildStatCard(
-                                loc.dashboardStatClients,
-                                totalClients.toString(),
-                                Icons.people_alt_outlined,
-                                Colors.blueAccent,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const ClientPage(),
-                                    ),
-                                  );
-                                },
-                              ),
-                              _buildStatCard(
-                                loc.dashboardStatProducts,
-                                totalProducts.toString(),
-                                Icons.inventory_2_outlined,
-                                Colors.green,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const ProductPage(),
-                                    ),
-                                  );
-                                },
-                              ),
-                              _buildStatCard(
-                                loc.dashboardStatSales,
-                                totalSales.toString(),
-                                Icons.shopping_cart_outlined,
-                                Colors.teal,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const SaleListPage(),
-                                    ),
-                                  );
-                                },
-                              ),
-                              _buildStatCard(
-                                loc.dashboardStatInvoices,
-                                totalInvoices.toString(),
-                                Icons.receipt_long_outlined,
-                                Colors.orange,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const InvoiceListPage(),
-                                    ),
-                                  );
-                                },
-                              ),
-                              _buildStatCard(
-                                loc.dashboardStatTotalSalesAmount,
-                                '${totalSalesAmount.toStringAsFixed(2)} \$',
-                                Icons.payments_outlined,
-                                Colors.purple,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const SaleListPage(),
-                                    ),
-                                  );
-                                },
-                              ),
-                              _buildStatCard(
-                                loc.dashboardStatRevenue,
-                                '${totalChiffreAffaire.toStringAsFixed(2)} \$',
-                                Icons.area_chart_outlined,
-                                Colors.red,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const ReportPage(),
-                                    ),
-                                  );
-                                },
-                              ),
-                              _buildStatCard(
-                                loc.dashboardStatTotalDeposits,
-                                '${totalDeposits.toStringAsFixed(2)} \$',
-                                Icons.savings,
-                                Colors.blueGrey,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const DepositsOverviewPage(),
-                                    ),
-                                  );
-                                },
-                              ),
-                              _buildStatCard(
-                                'Total caisse',
-                                '${totalCaisse.toStringAsFixed(2)} \$',
-                                Icons.account_balance,
-                                Colors.green,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const ReportPage(),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 40),
-                      Text(
-                        loc.dashboardPerfOverviewTitle,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blueGrey,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      // Sélecteur de période
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          DropdownButton<String>(
-                            value: selectedPeriod,
-                            items: [
-                              DropdownMenuItem(
-                                  value: '6mois',
-                                  child: Text(loc.dashboardPeriod6Months)),
-                              DropdownMenuItem(
-                                  value: '12mois',
-                                  child: Text(loc.dashboardPeriod12Months)),
-                              DropdownMenuItem(
-                                  value: 'annee',
-                                  child:
-                                      Text(loc.dashboardPeriodCurrentYear)),
-                            ],
-                            onChanged: (v) {
-                              if (v != null) setState(() => selectedPeriod = v);
-                            },
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildUserInfoCard(widget.loggedInUsername),
+                        const SizedBox(height: 30),
+                        Text(
+                          loc.dashboardKeyStatsTitle,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blueGrey,
                           ),
-                        ],
-                      ),
-                      Container(
-                        height: 320,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.1),
-                              spreadRadius: 2,
-                              blurRadius: 5,
-                              offset: const Offset(0, 3),
+                        ),
+                        const SizedBox(height: 20),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            int crossAxisCount;
+
+                            if (constraints.maxWidth >= 900) {
+                              // Grands écrans (tablettes paysage, grands iPad)
+                              crossAxisCount = 4;
+                            } else if (constraints.maxWidth >= 600) {
+                              // Écrans moyens (petites tablettes, grands smartphones)
+                              crossAxisCount = 3;
+                            } else {
+                              // Petits écrans (smartphones)
+                              crossAxisCount = 2;
+                            }
+
+                            return GridView.count(
+                              crossAxisCount: crossAxisCount,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              mainAxisSpacing: 20,
+                              crossAxisSpacing: 20,
+                              // Ratio adapté pour éviter des cartes trop hautes sur tablette
+                              childAspectRatio:
+                                  constraints.maxWidth >= 600 ? 1.6 : 1.3,
+                              children: [
+                                _buildStatCard(
+                                  loc.dashboardStatClients,
+                                  totalClients.toString(),
+                                  Icons.people_alt_outlined,
+                                  Colors.blueAccent,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const ClientPage(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                _buildStatCard(
+                                  loc.dashboardStatProducts,
+                                  totalProducts.toString(),
+                                  Icons.inventory_2_outlined,
+                                  Colors.green,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const ProductPage(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                _buildStatCard(
+                                  loc.dashboardStatSales,
+                                  totalSales.toString(),
+                                  Icons.shopping_cart_outlined,
+                                  Colors.teal,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const SaleListPage(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                _buildStatCard(
+                                  loc.dashboardStatInvoices,
+                                  totalInvoices.toString(),
+                                  Icons.receipt_long_outlined,
+                                  Colors.orange,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const InvoiceListPage(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                _buildStatCard(
+                                  loc.dashboardStatTotalSalesAmount,
+                                  '${totalSalesAmount.toStringAsFixed(2)} \$',
+                                  Icons.payments_outlined,
+                                  Colors.purple,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const SaleListPage(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                _buildStatCard(
+                                  loc.dashboardStatTotalDeposits,
+                                  '${totalDeposits.toStringAsFixed(2)} \$',
+                                  Icons.savings,
+                                  Colors.blueGrey,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const DepositsOverviewPage(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                _buildStatCard(
+                                  'Total caisse',
+                                  '${totalCaisse.toStringAsFixed(2)} \$',
+                                  Icons.account_balance,
+                                  Colors.green,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const ReportPage(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                _buildStatCard(
+                                  'Dettes Clients',
+                                  '${totalDette.toStringAsFixed(2)} \$',
+                                  Icons.money_off,
+                                  Colors.red,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const DettesPage(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 40),
+                        Text(
+                          loc.dashboardPerfOverviewTitle,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blueGrey,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        // Sélecteur de période
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            DropdownButton<String>(
+                              value: selectedPeriod,
+                              items: [
+                                DropdownMenuItem(
+                                    value: '6mois',
+                                    child: Text(loc.dashboardPeriod6Months)),
+                                DropdownMenuItem(
+                                    value: '12mois',
+                                    child: Text(loc.dashboardPeriod12Months)),
+                                DropdownMenuItem(
+                                    value: 'annee',
+                                    child:
+                                        Text(loc.dashboardPeriodCurrentYear)),
+                              ],
+                              onChanged: (v) {
+                                if (v != null)
+                                  setState(() => selectedPeriod = v);
+                              },
                             ),
                           ],
                         ),
-                        child: filteredChartTotals.isNotEmpty
-                            ? Column(
-                                children: [
-                                  SizedBox(
-                                    height: 180,
-                                    child: PieChart(
-                                      PieChartData(
-                                        sections: _getPieSections(),
-                                        sectionsSpace: 2,
-                                        centerSpaceRadius: 40,
-                                        borderData: FlBorderData(show: false),
-                                        pieTouchData: PieTouchData(
-                                          touchCallback: (event, response) {},
+                        Container(
+                          height: 320,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.1),
+                                spreadRadius: 2,
+                                blurRadius: 5,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: filteredChartTotals.isNotEmpty
+                              ? Column(
+                                  children: [
+                                    SizedBox(
+                                      height: 180,
+                                      child: PieChart(
+                                        PieChartData(
+                                          sections: _getPieSections(),
+                                          sectionsSpace: 2,
+                                          centerSpaceRadius: 40,
+                                          borderData: FlBorderData(show: false),
+                                          pieTouchData: PieTouchData(
+                                            touchCallback: (event, response) {},
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Expanded(
-                                    child: ListView.builder(
-                                      itemCount: filteredChartMonths.length,
-                                      itemBuilder: (context, index) {
-                                        final color = _pieColors[
-                                            index % _pieColors.length];
-                                        return Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 2),
-                                          child: Row(
-                                            children: [
-                                              Container(
-                                                width: 16,
-                                                height: 16,
-                                                decoration: BoxDecoration(
-                                                  color: color,
-                                                  shape: BoxShape.circle,
+                                    const SizedBox(height: 16),
+                                    Expanded(
+                                      child: ListView.builder(
+                                        itemCount: filteredChartMonths.length,
+                                        itemBuilder: (context, index) {
+                                          final color = _pieColors[
+                                              index % _pieColors.length];
+                                          return Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 2),
+                                            child: Row(
+                                              children: [
+                                                Container(
+                                                  width: 16,
+                                                  height: 16,
+                                                  decoration: BoxDecoration(
+                                                    color: color,
+                                                    shape: BoxShape.circle,
+                                                  ),
                                                 ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                filteredChartMonths[index],
-                                                style: const TextStyle(
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                '${filteredChartTotals[index].toStringAsFixed(2)} \$',
-                                                style: const TextStyle(
-                                                    color: Colors.blueGrey),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      },
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  filteredChartMonths[index],
+                                                  style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  '${filteredChartTotals[index].toStringAsFixed(2)} \$',
+                                                  style: const TextStyle(
+                                                      color: Colors.blueGrey),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),
                                     ),
+                                  ],
+                                )
+                              : Center(
+                                  child: Text(
+                                    loc.dashboardChartNoData,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                        fontSize: 16, color: Colors.grey),
                                   ),
-                                ],
-                              )
-                            : Center(
-                                child: Text(
-                                  loc.dashboardChartNoData,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                      fontSize: 16, color: Colors.grey),
                                 ),
-                              ),
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
       ),
     );
-
-
   }
 
   // Helper methods remain the same
-  Widget _buildStatCard(
-      String label, String value, IconData icon, Color color, {VoidCallback? onTap}) {
+  Widget _buildStatCard(String label, String value, IconData icon, Color color,
+      {VoidCallback? onTap}) {
     return Card(
       elevation: 5,
       shape: RoundedRectangleBorder(
@@ -737,7 +746,8 @@ class _DashboardPageState extends State<DashboardPage> {
                 children: [
                   Icon(icon, size: 35, color: color),
                   if (onTap != null)
-                    Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
+                    Icon(Icons.arrow_forward_ios,
+                        size: 16, color: Colors.grey[400]),
                 ],
               ),
               // const SizedBox(height: 10),
@@ -809,9 +819,9 @@ class _DashboardPageState extends State<DashboardPage> {
           children: [
             CircleAvatar(
               radius: 30,
-              
+
               backgroundImage: NetworkImage('https://wmahub.com/pro.jpg'),
-            //   
+              //
             ),
             const SizedBox(width: 20),
             Column(
@@ -829,8 +839,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   final loc = AppLocalizations.of(context);
                   return Text(
                     loc.dashboardUserWelcome,
-                    style:
-                        TextStyle(fontSize: 11, color: Colors.blueGrey[200]),
+                    style: TextStyle(fontSize: 11, color: Colors.blueGrey[200]),
                   );
                 }),
               ],

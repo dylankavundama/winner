@@ -5,7 +5,7 @@ class ApiConstants {
   // For Physical Device: 'http://YOUR_MACHINE_IP/your_pos_project_folder'
   static const String baseUrl =
       'https://winnercompany.net/api'; // Base for all API calls
-      // 'http://192.168.1.69/winner/gestion-app/gestion-app/api/';
+  // 'http://192.168.1.69/winner/gestion-app/gestion-app/api/';
   static const String usernamesApi = '$baseUrl/usernames.php';
   static const String loginApi = '$baseUrl/login.php';
   static const String dashboardStatsApi =
@@ -33,4 +33,6 @@ class ApiConstants {
   // Dépôts (paiement par tranches)
   static const String depositsApi = '$baseUrl/deposits.php';
   static const String depositsHistoryApi = '$baseUrl/deposits_history.php';
+  static const String dettesApi = '$baseUrl/dettes.php';
+  static const String addInvoiceApi = '$baseUrl/add_invoice.php';
 }

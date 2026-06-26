@@ -12,14 +12,21 @@ class Invoice {
   final double total;
   final String status;
 
-  Invoice({required this.id, required this.clientName, required this.saleDate, required this.total, required this.status});
+  Invoice(
+      {required this.id,
+      required this.clientName,
+      required this.saleDate,
+      required this.total,
+      required this.status});
 
   factory Invoice.fromJson(Map<String, dynamic> json) {
     return Invoice(
       id: json['id'],
       clientName: json['client_name'] ?? '',
       saleDate: json['sale_date'] ?? '',
-      total: (json['total'] is num) ? (json['total'] as num).toDouble() : double.tryParse(json['total'].toString()) ?? 0.0,
+      total: (json['total'] is num)
+          ? (json['total'] as num).toDouble()
+          : double.tryParse(json['total'].toString()) ?? 0.0,
       status: json['status'] ?? '',
     );
   }
@@ -36,7 +43,8 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
   List<Invoice> invoices = [];
   bool isLoading = true;
   String? errorMessage;
-  String sortMode = 'date_desc'; // 'date_desc', 'date_asc', 'payee', 'non_payee'
+  String sortMode =
+      'date_desc'; // 'date_desc', 'date_asc', 'payee', 'non_payee'
 
   @override
   void initState() {
@@ -50,17 +58,21 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
       errorMessage = null;
     });
     try {
-      final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/invoices.php'));
+      final response =
+          await http.get(Uri.parse('${ApiConstants.baseUrl}/invoices.php'));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true && data['invoices'] is List) {
           setState(() {
-            invoices = (data['invoices'] as List).map((e) => Invoice.fromJson(e)).toList();
+            invoices = (data['invoices'] as List)
+                .map((e) => Invoice.fromJson(e))
+                .toList();
             isLoading = false;
           });
         } else {
           setState(() {
-            errorMessage = data['message'] ?? 'Erreur lors du chargement des factures';
+            errorMessage =
+                data['message'] ?? 'Erreur lors du chargement des factures';
             isLoading = false;
           });
         }
@@ -72,7 +84,8 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
       }
     } catch (e) {
       setState(() {
-        errorMessage = 'Erreur de connexion: ${ErrorUtils.getUserFriendlyError(e)}';
+        errorMessage =
+            'Erreur de connexion: ${ErrorUtils.getUserFriendlyError(e)}';
         isLoading = false;
       });
     }
@@ -113,7 +126,8 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
   }
 
   Future<void> _toggleInvoiceStatus(Invoice invoice) async {
-    final newStatus = invoice.status.toLowerCase() == 'payée' ? 'non payée' : 'payée';
+    final newStatus =
+        invoice.status.toLowerCase() == 'payée' ? 'impayée' : 'payée';
     try {
       final response = await http.post(
         Uri.parse('${ApiConstants.baseUrl}/update_invoice_status.php'),
@@ -130,7 +144,9 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(data['message'] ?? 'Erreur lors de la mise à jour du statut.')),
+          SnackBar(
+              content: Text(data['message'] ??
+                  'Erreur lors de la mise à jour du statut.')),
         );
       }
     } catch (e) {
@@ -151,10 +167,14 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
             icon: const Icon(Icons.sort),
             onSelected: _setSortMode,
             itemBuilder: (context) => [
-              const PopupMenuItem(value: 'date_desc', child: Text('Date décroissante')),
-              const PopupMenuItem(value: 'date_asc', child: Text('Date croissante')),
-              const PopupMenuItem(value: 'payee', child: Text('Factures payées')),
-              const PopupMenuItem(value: 'non_payee', child: Text('Factures non payées')),
+              const PopupMenuItem(
+                  value: 'date_desc', child: Text('Date décroissante')),
+              const PopupMenuItem(
+                  value: 'date_asc', child: Text('Date croissante')),
+              const PopupMenuItem(
+                  value: 'payee', child: Text('Factures payées')),
+              const PopupMenuItem(
+                  value: 'non_payee', child: Text('Factures non payées')),
             ],
           ),
         ],
@@ -197,7 +217,8 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                       onRefresh: _fetchInvoices,
                       child: ListView.separated(
                         itemCount: sortedInvoices.length,
-                        separatorBuilder: (context, index) => const Divider(height: 1),
+                        separatorBuilder: (context, index) =>
+                            const Divider(height: 1),
                         itemBuilder: (context, index) {
                           final invoice = sortedInvoices[index];
                           return ListTile(
@@ -219,18 +240,29 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                                 children: [
                                   Text(
                                     '${invoice.total.toStringAsFixed(2)} \$',
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(width: 8),
                                   IconButton(
                                     icon: Icon(
-                                      invoice.status.toLowerCase() == 'payée' ? Icons.check_circle : Icons.cancel,
-                                      color: invoice.status.toLowerCase() == 'payée' ? Colors.green : Colors.red,
+                                      invoice.status.toLowerCase() == 'payée'
+                                          ? Icons.check_circle
+                                          : Icons.cancel,
+                                      color: invoice.status.toLowerCase() ==
+                                              'payée'
+                                          ? Colors.green
+                                          : Colors.red,
                                       size: 22,
                                     ),
-                                    tooltip: invoice.status.toLowerCase() == 'payée' ? 'Marquer non payée' : 'Marquer payée',
-                                    onPressed: () => _toggleInvoiceStatus(invoice),
+                                    tooltip:
+                                        invoice.status.toLowerCase() == 'payée'
+                                            ? 'Marquer non payée'
+                                            : 'Marquer payée',
+                                    onPressed: () =>
+                                        _toggleInvoiceStatus(invoice),
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
                                   ),
@@ -241,7 +273,8 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => FacturePage(invoiceId: invoice.id),
+                                  builder: (context) =>
+                                      FacturePage(invoiceId: invoice.id),
                                 ),
                               );
                             },
@@ -251,4 +284,4 @@ class _InvoiceListPageState extends State<InvoiceListPage> {
                     ),
     );
   }
-} 
+}

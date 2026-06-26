@@ -29,10 +29,12 @@ class _VentePageState extends State<VentePage> {
   // Contrôleurs de formulaire
   final TextEditingController _clientSearchController = TextEditingController();
   final TextEditingController _clientNameController = TextEditingController();
-  final TextEditingController _clientAddressController = TextEditingController();
+  final TextEditingController _clientAddressController =
+      TextEditingController();
   final TextEditingController _garantieController = TextEditingController();
   final TextEditingController _imeiController = TextEditingController();
-  final TextEditingController _productSearchController = TextEditingController();
+  final TextEditingController _productSearchController =
+      TextEditingController();
 
   // Données
   List<SaleProduct> _selectedProducts = [];
@@ -79,7 +81,8 @@ class _VentePageState extends State<VentePage> {
       ]);
     } catch (e) {
       final loc = AppLocalizations.of(context);
-      setState(() => _errorMessage = loc.venteLoadError(ErrorUtils.getUserFriendlyError(e)));
+      setState(() => _errorMessage =
+          loc.venteLoadError(ErrorUtils.getUserFriendlyError(e)));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -135,7 +138,8 @@ class _VentePageState extends State<VentePage> {
     } catch (e) {
       final loc = AppLocalizations.of(context);
       setState(() {
-        _errorMessage = loc.venteErrorConnection(ErrorUtils.getUserFriendlyError(e));
+        _errorMessage =
+            loc.venteErrorConnection(ErrorUtils.getUserFriendlyError(e));
       });
     }
   }
@@ -152,7 +156,7 @@ class _VentePageState extends State<VentePage> {
   void _filterProducts(String query) {
     // Annuler le timer précédent s'il existe
     _productSearchDebouncer?.cancel();
-    
+
     // Si la requête est vide, masquer immédiatement
     if (query.isEmpty) {
       setState(() {
@@ -161,23 +165,23 @@ class _VentePageState extends State<VentePage> {
       });
       return;
     }
-    
+
     // Créer un nouveau timer pour debounce (300ms)
     _productSearchDebouncer = Timer(const Duration(milliseconds: 300), () {
       if (!mounted) return;
-      
+
       final queryLower = query.toLowerCase().trim();
-      
+
       // Filtrer les produits
       final filtered = _allProducts.where((product) {
         final nameMatch = product.name.toLowerCase().contains(queryLower);
         final idMatch = product.id.toString().contains(query);
         return nameMatch || idMatch;
       }).toList();
-      
+
       // Limiter à 20 résultats pour éviter la surcharge
       final limitedResults = filtered.take(20).toList();
-      
+
       setState(() {
         _filteredProducts = limitedResults;
         _showProductDropdown = limitedResults.isNotEmpty;
@@ -225,20 +229,21 @@ class _VentePageState extends State<VentePage> {
       return null;
     } catch (e) {
       final loc = AppLocalizations.of(context);
-      _showError(loc.venteErrorConnectionClient(ErrorUtils.getUserFriendlyError(e)));
+      _showError(
+          loc.venteErrorConnectionClient(ErrorUtils.getUserFriendlyError(e)));
       return null;
     }
   }
 
   Future<void> _handleNextClientStep() async {
     final newClientName = _clientNameController.text.trim();
-    
+
     // Priorité: nouveau client si saisi
     if (newClientName.isNotEmpty) {
       setState(() => _isLoading = true);
       final clientId = await _addNewClient(newClientName);
       setState(() => _isLoading = false);
-      
+
       if (clientId != null) {
         final newClient = Client(id: clientId, name: newClientName);
         setState(() {
@@ -252,11 +257,11 @@ class _VentePageState extends State<VentePage> {
         final loc = AppLocalizations.of(context);
         _showError(loc.venteErrorCreateClient);
       }
-    } 
+    }
     // Sinon, vérifier qu'un client existant est sélectionné
     else if (_selectedClient != null) {
       _nextPage();
-    } 
+    }
     // Aucun client sélectionné
     else {
       final loc = AppLocalizations.of(context);
@@ -273,13 +278,13 @@ class _VentePageState extends State<VentePage> {
       _showError(loc.venteErrorProductAlreadyAdded);
       return;
     }
-    
+
     // Vérifier le stock
     if (product.quantity <= 0) {
       _showError(loc.venteErrorInsufficientStock(product.name));
       return;
     }
-    
+
     setState(() {
       _selectedProducts.add(SaleProduct(
         id: product.id,
@@ -290,7 +295,7 @@ class _VentePageState extends State<VentePage> {
         priceOverride: product.prixVente,
       ));
     });
-    
+
     _showSuccess(loc.venteProductAddedToSale(product.name));
   }
 
@@ -337,21 +342,31 @@ class _VentePageState extends State<VentePage> {
       if (response.statusCode == 200) {
         try {
           final responseData = jsonDecode(response.body);
-          
+
           final loc = AppLocalizations.of(context);
           if (responseData['success'] == true) {
-            _showSuccess(responseData['message'] ?? loc.venteSaleRecorded);
             try {
-              final saleId = int.tryParse(responseData['sale_id'].toString()) ?? 0;
-              // Générer la facture automatiquement
-              final invoiceId = await _generateInvoice(saleId);
+              final saleId =
+                  int.tryParse(responseData['sale_id'].toString()) ?? 0;
+
+              // Demander le statut de la facture AVANT tout message de succès
+              final String? status = await _askPaymentStatus();
+
+              // Si annulé, on met 'impayée' par défaut pour garantir la génération de facture
+              final finalStatus = status ?? 'impayée';
+
+              // Générer la facture avec le statut choisi
+              final invoiceId = await _generateInvoice(saleId, finalStatus);
+
               if (invoiceId != null) {
+                _showSuccess(responseData['message'] ?? loc.venteSaleRecorded);
                 await _showSuccessDialog(invoiceId);
               } else {
                 _showError(loc.venteErrorGenerateInvoice);
               }
             } catch (e) {
               print('Erreur lors de la création de la facture: $e');
+              _showError(loc.venteErrorGenerateInvoice);
             }
           } else {
             _showError(responseData['message'] ?? loc.venteErrorSale);
@@ -396,18 +411,23 @@ class _VentePageState extends State<VentePage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow(Icons.person, loc.venteInfoClient, _selectedClient?.name ?? ''),
+                _buildInfoRow(Icons.person, loc.venteInfoClient,
+                    _selectedClient?.name ?? ''),
                 const SizedBox(height: 8),
-                _buildInfoRow(Icons.attach_money, loc.venteInfoTotal, '${_calculateTotal().toStringAsFixed(2)} \$'),
+                _buildInfoRow(Icons.attach_money, loc.venteInfoTotal,
+                    '${_calculateTotal().toStringAsFixed(2)} \$'),
                 const SizedBox(height: 8),
-                _buildInfoRow(Icons.calendar_today, loc.venteInfoDate, DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())),
+                _buildInfoRow(Icons.calendar_today, loc.venteInfoDate,
+                    DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())),
                 if (_imeiController.text.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  _buildInfoRow(Icons.phone_android, loc.venteInfoImei, _imeiController.text),
+                  _buildInfoRow(Icons.phone_android, loc.venteInfoImei,
+                      _imeiController.text),
                 ],
                 if (_garantieController.text.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  _buildInfoRow(Icons.verified, loc.venteInfoWarranty, _garantieController.text),
+                  _buildInfoRow(Icons.verified, loc.venteInfoWarranty,
+                      _garantieController.text),
                 ],
               ],
             ),
@@ -512,7 +532,8 @@ class _VentePageState extends State<VentePage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                      Icon(Icons.error_outline,
+                          size: 64, color: Colors.red[300]),
                       const SizedBox(height: 16),
                       Text(
                         _errorMessage!,
@@ -628,16 +649,18 @@ class _VentePageState extends State<VentePage> {
               const SizedBox(width: 8),
               Text(
                 loc.venteClientInfoTitle,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
             ],
           ),
           const SizedBox(height: 24),
-          
+
           // Recherche de client avec TypeAhead
           Card(
             elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -645,7 +668,8 @@ class _VentePageState extends State<VentePage> {
                 children: [
                   Text(
                     loc.venteSearchExistingClient,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 12),
                   TypeAheadField<Client>(
@@ -720,7 +744,8 @@ class _VentePageState extends State<VentePage> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.check_circle, color: Colors.green[700], size: 20),
+                          Icon(Icons.check_circle,
+                              color: Colors.green[700], size: 20),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -739,9 +764,9 @@ class _VentePageState extends State<VentePage> {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Séparateur
           Row(
             children: [
@@ -759,13 +784,14 @@ class _VentePageState extends State<VentePage> {
               Expanded(child: Divider(color: Colors.grey[300])),
             ],
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Créer un nouveau client
           Card(
             elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -777,7 +803,8 @@ class _VentePageState extends State<VentePage> {
                       const SizedBox(width: 8),
                       Text(
                         loc.venteCreateNewClient,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
@@ -813,7 +840,7 @@ class _VentePageState extends State<VentePage> {
               ),
             ),
           ),
-          
+
           if (_clients.isEmpty) ...[
             const SizedBox(height: 24),
             Card(
@@ -853,14 +880,16 @@ class _VentePageState extends State<VentePage> {
               const SizedBox(width: 8),
               Text(
                 loc.venteAddressTitle,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
             ],
           ),
           const SizedBox(height: 24),
           Card(
             elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -926,14 +955,16 @@ class _VentePageState extends State<VentePage> {
               const SizedBox(width: 8),
               Text(
                 loc.venteWarrantyTitle,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
             ],
           ),
           const SizedBox(height: 24),
           Card(
             elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -961,12 +992,14 @@ class _VentePageState extends State<VentePage> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                        Icon(Icons.info_outline,
+                            color: Colors.blue[700], size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             loc.venteWarrantyOptional,
-                            style: TextStyle(color: Colors.blue[900], fontSize: 12),
+                            style: TextStyle(
+                                color: Colors.blue[900], fontSize: 12),
                           ),
                         ),
                       ],
@@ -1022,7 +1055,8 @@ class _VentePageState extends State<VentePage> {
               const SizedBox(height: 8),
               ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.3, // 30% de la hauteur d'écran
+                  maxHeight: MediaQuery.of(context).size.height *
+                      0.3, // 30% de la hauteur d'écran
                 ),
                 child: Container(
                   decoration: BoxDecoration(
@@ -1046,8 +1080,9 @@ class _VentePageState extends State<VentePage> {
                           itemCount: _filteredProducts.length,
                           itemBuilder: (context, index) {
                             final product = _filteredProducts[index];
-                            final isAlreadyAdded = _selectedProducts.any((p) => p.id == product.id);
-                            
+                            final isAlreadyAdded = _selectedProducts
+                                .any((p) => p.id == product.id);
+
                             return InkWell(
                               onTap: !isAlreadyAdded && product.quantity > 0
                                   ? () {
@@ -1094,11 +1129,13 @@ class _VentePageState extends State<VentePage> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      loc.venteStockLabel(product.quantity.toString()),
+                                      loc.venteStockLabel(
+                                          product.quantity.toString()),
                                       style: const TextStyle(fontSize: 12),
                                     ),
                                     Text(
-                                      loc.ventePriceLabel(product.prixVente.toStringAsFixed(2)),
+                                      loc.ventePriceLabel(
+                                          product.prixVente.toStringAsFixed(2)),
                                       style: TextStyle(
                                         color: Colors.green[700],
                                         fontWeight: FontWeight.bold,
@@ -1109,14 +1146,19 @@ class _VentePageState extends State<VentePage> {
                                 ),
                                 trailing: isAlreadyAdded
                                     ? Chip(
-                                        label: Text(loc.venteProductAdded, style: const TextStyle(fontSize: 10)),
+                                        label: Text(loc.venteProductAdded,
+                                            style:
+                                                const TextStyle(fontSize: 10)),
                                         backgroundColor: Colors.green,
-                                        labelStyle: const TextStyle(color: Colors.white),
-                                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                                        labelStyle: const TextStyle(
+                                            color: Colors.white),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 4),
                                       )
                                     : product.quantity > 0
                                         ? IconButton(
-                                            icon: const Icon(Icons.add_circle, color: Colors.blue, size: 24),
+                                            icon: const Icon(Icons.add_circle,
+                                                color: Colors.blue, size: 24),
                                             onPressed: () {
                                               _addProduct(product);
                                               _productSearchController.clear();
@@ -1124,12 +1166,18 @@ class _VentePageState extends State<VentePage> {
                                             },
                                           )
                                         : Chip(
-                                            label: Text(loc.venteProductOutOfStock, style: const TextStyle(fontSize: 10)),
+                                            label: Text(
+                                                loc.venteProductOutOfStock,
+                                                style: const TextStyle(
+                                                    fontSize: 10)),
                                             backgroundColor: Colors.red,
-                                            labelStyle: const TextStyle(color: Colors.white),
-                                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                                            labelStyle: const TextStyle(
+                                                color: Colors.white),
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 4),
                                           ),
-                                enabled: !isAlreadyAdded && product.quantity > 0,
+                                enabled:
+                                    !isAlreadyAdded && product.quantity > 0,
                               ),
                             );
                           },
@@ -1168,259 +1216,319 @@ class _VentePageState extends State<VentePage> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.shopping_cart, color: Colors.blueGrey[800], size: 28),
+                  Icon(Icons.shopping_cart,
+                      color: Colors.blueGrey[800], size: 28),
                   const SizedBox(width: 8),
                   Text(
                     loc.venteProductsTitle,
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
-              
+
               // Widget de recherche de produits
               _buildProductSearchWidget(),
-              
+
               const SizedBox(height: 16),
-              
+
               // Zone des produits sélectionnés
               Expanded(
-                child: _selectedProducts.isNotEmpty 
-                  ? Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.blueGrey[50],
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                loc.venteSelectedProducts,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blueGrey[800],
-                                ),
-                              ),
-                              Chip(
-                                label: Text('${_selectedProducts.length}'),
-                                backgroundColor: Colors.blueGrey[800],
-                                labelStyle: const TextStyle(color: Colors.white),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Expanded(
-                          child: ListView.builder(
-                            itemCount: _selectedProducts.length,
-                            itemBuilder: (context, index) {
-                              final product = _selectedProducts[index];
-                              return Card(
-                                margin: const EdgeInsets.symmetric(vertical: 4),
-                                elevation: 1,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: ListTile(
-                                  leading: CircleAvatar(
-                                    backgroundColor: Colors.blue[100],
-                                    child: Text(
-                                      '${product.quantityToSell}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.blue,
-                                      ),
-                                    ),
-                                  ),
-                                  title: Text(
-                                    product.name,
-                                    style: const TextStyle(fontWeight: FontWeight.w500),
-                                  ),
-                                  subtitle: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      // Prix avec possibilité de modification
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                if (product.priceOverride != product.prixVente) ...[
-                                                  Text(
-                                                    loc.venteOriginalPrice(_currencyFormatter.format(product.prixVente)),
-                                                    style: TextStyle(
-                                                      fontSize: 11,
-                                                      color: Colors.grey[600],
-                                                      decoration: TextDecoration.lineThrough,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 2),
-                                                ],
-                                                Row(
-                                                  children: [
-                                                    Text(
-                                                      loc.ventePrice(_currencyFormatter.format(product.priceOverride)),
-                                                      style: TextStyle(
-                                                        color: product.priceOverride < product.prixVente
-                                                            ? Colors.orange[700]
-                                                            : Colors.green[700],
-                                                        fontWeight: FontWeight.bold,
-                                                        fontSize: 14,
-                                                      ),
-                                                    ),
-                                                    if (product.priceOverride < product.prixVente) ...[
-                                                      const SizedBox(width: 4),
-                                                      Container(
-                                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                        decoration: BoxDecoration(
-                                                          color: Colors.orange[100],
-                                                          borderRadius: BorderRadius.circular(4),
-                                                        ),
-                                                        child: Text(
-                                                          '-${((product.prixVente - product.priceOverride) / product.prixVente * 100).toStringAsFixed(0)}%',
-                                                          style: TextStyle(
-                                                            color: Colors.orange[900],
-                                                            fontSize: 10,
-                                                            fontWeight: FontWeight.bold,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ],
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          IconButton(
-                                            icon: Icon(
-                                              Icons.edit,
-                                              size: 20,
-                                              color: Colors.blue[700],
-                                            ),
-                                            onPressed: () => _showEditPriceDialog(product),
-                                            tooltip: loc.venteEditPriceTooltip,
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          IconButton(
-                                            icon: const Icon(Icons.remove_circle_outline),
-                                            iconSize: 20,
-                                            color: Colors.red,
-                                            onPressed: () => _updateProductQuantity(
-                                                product.id, product.quantityToSell - 1),
-                                          ),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              border: Border.all(color: Colors.grey),
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              '${product.quantityToSell}',
-                                              style: const TextStyle(fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(Icons.add_circle_outline),
-                                            iconSize: 20,
-                                            color: Colors.green,
-                                            onPressed: () => _updateProductQuantity(
-                                                product.id, product.quantityToSell + 1),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.delete, color: Colors.red),
-                                        onPressed: () => _removeProduct(product.id),
-                                        tooltip: loc.venteDeleteTooltip,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        // Total
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.green[50],
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.green[200]!),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.attach_money, color: Colors.green[700]),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    loc.venteTotal,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Text(
-                                _currencyFormatter.format(_calculateTotal()),
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green[700],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    )
-                  : Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                child: _selectedProducts.isNotEmpty
+                    ? Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            Icons.shopping_cart_outlined,
-                            size: 64,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            loc.venteNoProductsSelected,
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500,
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 8, horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.blueGrey[50],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  loc.venteSelectedProducts,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blueGrey[800],
+                                  ),
+                                ),
+                                Chip(
+                                  label: Text('${_selectedProducts.length}'),
+                                  backgroundColor: Colors.blueGrey[800],
+                                  labelStyle:
+                                      const TextStyle(color: Colors.white),
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            loc.venteNoProductsHint,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[500],
+                          Expanded(
+                            child: ListView.builder(
+                              itemCount: _selectedProducts.length,
+                              itemBuilder: (context, index) {
+                                final product = _selectedProducts[index];
+                                return Card(
+                                  margin:
+                                      const EdgeInsets.symmetric(vertical: 4),
+                                  elevation: 1,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: ListTile(
+                                    leading: CircleAvatar(
+                                      backgroundColor: Colors.blue[100],
+                                      child: Text(
+                                        '${product.quantityToSell}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.blue,
+                                        ),
+                                      ),
+                                    ),
+                                    title: Text(
+                                      product.name,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w500),
+                                    ),
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        // Prix avec possibilité de modification
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  if (product.priceOverride !=
+                                                      product.prixVente) ...[
+                                                    Text(
+                                                      loc.venteOriginalPrice(
+                                                          _currencyFormatter
+                                                              .format(product
+                                                                  .prixVente)),
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        color: Colors.grey[600],
+                                                        decoration:
+                                                            TextDecoration
+                                                                .lineThrough,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 2),
+                                                  ],
+                                                  Row(
+                                                    children: [
+                                                      Text(
+                                                        loc.ventePrice(
+                                                            _currencyFormatter
+                                                                .format(product
+                                                                    .priceOverride)),
+                                                        style: TextStyle(
+                                                          color: product
+                                                                      .priceOverride <
+                                                                  product
+                                                                      .prixVente
+                                                              ? Colors
+                                                                  .orange[700]
+                                                              : Colors
+                                                                  .green[700],
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 14,
+                                                        ),
+                                                      ),
+                                                      if (product
+                                                              .priceOverride <
+                                                          product
+                                                              .prixVente) ...[
+                                                        const SizedBox(
+                                                            width: 4),
+                                                        Container(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal: 6,
+                                                                  vertical: 2),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: Colors
+                                                                .orange[100],
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        4),
+                                                          ),
+                                                          child: Text(
+                                                            '-${((product.prixVente - product.priceOverride) / product.prixVente * 100).toStringAsFixed(0)}%',
+                                                            style: TextStyle(
+                                                              color: Colors
+                                                                  .orange[900],
+                                                              fontSize: 10,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            IconButton(
+                                              icon: Icon(
+                                                Icons.edit,
+                                                size: 20,
+                                                color: Colors.blue[700],
+                                              ),
+                                              onPressed: () =>
+                                                  _showEditPriceDialog(product),
+                                              tooltip:
+                                                  loc.venteEditPriceTooltip,
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            IconButton(
+                                              icon: const Icon(
+                                                  Icons.remove_circle_outline),
+                                              iconSize: 20,
+                                              color: Colors.red,
+                                              onPressed: () =>
+                                                  _updateProductQuantity(
+                                                      product.id,
+                                                      product.quantityToSell -
+                                                          1),
+                                            ),
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 4),
+                                              decoration: BoxDecoration(
+                                                border: Border.all(
+                                                    color: Colors.grey),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                '${product.quantityToSell}',
+                                                style: const TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                              ),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(
+                                                  Icons.add_circle_outline),
+                                              iconSize: 20,
+                                              color: Colors.green,
+                                              onPressed: () =>
+                                                  _updateProductQuantity(
+                                                      product.id,
+                                                      product.quantityToSell +
+                                                          1),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.delete,
+                                              color: Colors.red),
+                                          onPressed: () =>
+                                              _removeProduct(product.id),
+                                          tooltip: loc.venteDeleteTooltip,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // Total
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.green[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.green[200]!),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.attach_money,
+                                        color: Colors.green[700]),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      loc.venteTotal,
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  _currencyFormatter.format(_calculateTotal()),
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green[700],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
+                      )
+                    : Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.shopping_cart_outlined,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              loc.venteNoProductsSelected,
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              loc.venteNoProductsHint,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
               ),
             ],
           ),
@@ -1541,198 +1649,213 @@ class _VentePageState extends State<VentePage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.edit, color: Colors.blue[700]),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  loc.venteModifyPrice,
-                  style: TextStyle(fontSize: 18),
-                ),
-              ),
-            ],
-          ),
-          content: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+              title: Row(
                 children: [
-                  Text(
-                    product.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                  Icon(Icons.edit, color: Colors.blue[700]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      loc.venteModifyPrice,
+                      style: TextStyle(fontSize: 18),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    loc.venteOriginalPrice(_currencyFormatter.format(product.prixVente)),
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: priceController,
-                    decoration: InputDecoration(
-                      labelText: loc.venteNewPriceLabel,
-                      hintText: loc.venteNewPriceHint,
-                      prefixIcon: const Icon(Icons.attach_money),
-                      suffixText: '\$',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey[50],
-                    ),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    onChanged: (value) {
-                      setDialogState(() {}); // Mettre à jour l'affichage en temps réel
-                    },
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return loc.ventePriceRequired;
-                      }
-                      final price = double.tryParse(value);
-                      if (price == null) {
-                        return loc.ventePriceInvalid;
-                      }
-                      if (price < 0) {
-                        return loc.ventePriceNegative;
-                      }
-                      if (price > product.prixVente * 2) {
-                        return loc.ventePriceTooHigh;
-                      }
-                      return null;
-                    },
-                    autofocus: true,
-                  ),
-                  const SizedBox(height: 12),
-                  // Afficher la réduction si applicable
-                  Builder(
-                    builder: (context) {
-                      final newPrice = double.tryParse(priceController.text) ?? product.priceOverride;
-                      if (newPrice < product.prixVente) {
-                        final reduction = product.prixVente - newPrice;
-                        final percentage = (reduction / product.prixVente * 100);
-                        return Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.orange[50],
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.orange[200]!),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.trending_down, color: Colors.orange[700], size: 20),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      loc.venteReduction(_currencyFormatter.format(reduction)),
-                                      style: TextStyle(
-                                        color: Colors.orange[900],
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      loc.venteReductionPercent(percentage.toStringAsFixed(1)),
-                                      style: TextStyle(
-                                        color: Colors.orange[700],
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      } else if (newPrice > product.prixVente) {
-                        final augmentation = newPrice - product.prixVente;
-                        final percentage = (augmentation / product.prixVente * 100);
-                        return Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.blue[50],
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.blue[200]!),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.trending_up, color: Colors.blue[700], size: 20),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      loc.venteIncrease(_currencyFormatter.format(augmentation)),
-                                      style: TextStyle(
-                                        color: Colors.blue[900],
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      loc.venteIncreasePercent(percentage.toStringAsFixed(1)),
-                                      style: TextStyle(
-                                        color: Colors.blue[700],
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
                   ),
                 ],
               ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(loc.venteCancel),
-            ),
-            TextButton(
-              onPressed: () {
-                // Réinitialiser au prix original
-                priceController.text = product.prixVente.toStringAsFixed(2);
-                setDialogState(() {}); // Mettre à jour l'affichage
-              },
-              child: Text(
-                loc.venteReset,
-                style: TextStyle(color: Colors.grey[600]),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        product.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        loc.venteOriginalPrice(
+                            _currencyFormatter.format(product.prixVente)),
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: priceController,
+                        decoration: InputDecoration(
+                          labelText: loc.venteNewPriceLabel,
+                          hintText: loc.venteNewPriceHint,
+                          prefixIcon: const Icon(Icons.attach_money),
+                          suffixText: '\$',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        onChanged: (value) {
+                          setDialogState(
+                              () {}); // Mettre à jour l'affichage en temps réel
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return loc.ventePriceRequired;
+                          }
+                          final price = double.tryParse(value);
+                          if (price == null) {
+                            return loc.ventePriceInvalid;
+                          }
+                          if (price < 0) {
+                            return loc.ventePriceNegative;
+                          }
+                          if (price > product.prixVente * 2) {
+                            return loc.ventePriceTooHigh;
+                          }
+                          return null;
+                        },
+                        autofocus: true,
+                      ),
+                      const SizedBox(height: 12),
+                      // Afficher la réduction si applicable
+                      Builder(
+                        builder: (context) {
+                          final newPrice =
+                              double.tryParse(priceController.text) ??
+                                  product.priceOverride;
+                          if (newPrice < product.prixVente) {
+                            final reduction = product.prixVente - newPrice;
+                            final percentage =
+                                (reduction / product.prixVente * 100);
+                            return Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.orange[50],
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.orange[200]!),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.trending_down,
+                                      color: Colors.orange[700], size: 20),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          loc.venteReduction(_currencyFormatter
+                                              .format(reduction)),
+                                          style: TextStyle(
+                                            color: Colors.orange[900],
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(
+                                          loc.venteReductionPercent(
+                                              percentage.toStringAsFixed(1)),
+                                          style: TextStyle(
+                                            color: Colors.orange[700],
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          } else if (newPrice > product.prixVente) {
+                            final augmentation = newPrice - product.prixVente;
+                            final percentage =
+                                (augmentation / product.prixVente * 100);
+                            return Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.blue[50],
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.blue[200]!),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.trending_up,
+                                      color: Colors.blue[700], size: 20),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          loc.venteIncrease(_currencyFormatter
+                                              .format(augmentation)),
+                                          style: TextStyle(
+                                            color: Colors.blue[900],
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(
+                                          loc.venteIncreasePercent(
+                                              percentage.toStringAsFixed(1)),
+                                          style: TextStyle(
+                                            color: Colors.blue[700],
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  final newPrice = double.parse(priceController.text);
-                  setState(() {
-                    product.priceOverride = newPrice;
-                  });
-                  Navigator.of(dialogContext).pop();
-                  _showSuccess(loc.ventePriceModified);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[700],
-              ),
-              child: Text(loc.venteSave),
-            ),
-          ],
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(loc.venteCancel),
+                ),
+                TextButton(
+                  onPressed: () {
+                    // Réinitialiser au prix original
+                    priceController.text = product.prixVente.toStringAsFixed(2);
+                    setDialogState(() {}); // Mettre à jour l'affichage
+                  },
+                  child: Text(
+                    loc.venteReset,
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      final newPrice = double.parse(priceController.text);
+                      setState(() {
+                        product.priceOverride = newPrice;
+                      });
+                      Navigator.of(dialogContext).pop();
+                      _showSuccess(loc.ventePriceModified);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[700],
+                  ),
+                  child: Text(loc.venteSave),
+                ),
+              ],
             );
           },
         );
@@ -1740,13 +1863,55 @@ class _VentePageState extends State<VentePage> {
     );
   }
 
+  // Demander le statut de paiement via un popup
+  Future<String?> _askPaymentStatus() async {
+    return await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Finalisation de la vente"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("Choisissez le mode de paiement pour cette vente :",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              const Text(
+                  "Note : Seules les factures 'PAYÉES' augmentent le montant en caisse.",
+                  style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
+            ],
+          ),
+          actionsAlignment: MainAxisAlignment.spaceEvenly,
+          actions: [
+            OutlinedButton.icon(
+              icon: const Icon(Icons.money_off, color: Colors.orange),
+              onPressed: () => Navigator.of(context).pop('impayée'),
+              label: const Text("À CRÉDIT",
+                  style: TextStyle(
+                      color: Colors.orange, fontWeight: FontWeight.bold)),
+            ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.attach_money, color: Colors.white),
+              onPressed: () => Navigator.of(context).pop('payée'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              label: const Text("CASH / PAYÉ",
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // Générer la facture via l'API
-  Future<int?> _generateInvoice(int saleId) async {
+  Future<int?> _generateInvoice(int saleId, String status) async {
     try {
       final response = await http.post(
         Uri.parse('${ApiConstants.baseUrl}/add_invoice.php'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'sale_id': saleId}),
+        body: json.encode({'sale_id': saleId, 'status': status}),
       );
       if (response.statusCode == 200) {
         final data = json.decode(response.body);

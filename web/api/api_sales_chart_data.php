@@ -6,11 +6,13 @@ try {
     // Récupérer les ventes par mois pour le graphique
     $chart_data = $pdo->query("
         SELECT 
-            DATE_FORMAT(sale_date, '%b') as month, 
-            SUM(total) as total 
-        FROM sales 
+            DATE_FORMAT(s.sale_date, '%b') as month, 
+            SUM(s.total) as total 
+        FROM sales s
+        JOIN invoices i ON s.id = i.sale_id
+        WHERE i.status = 'payée'
         GROUP BY month 
-        ORDER BY MIN(sale_date)
+        ORDER BY MIN(s.sale_date)
     ")->fetchAll(PDO::FETCH_ASSOC);
     
     $months = [];

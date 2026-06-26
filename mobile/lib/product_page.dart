@@ -104,74 +104,75 @@ class _ProductPageState extends State<ProductPage> {
 
   // Fetches product data from the API
   Future<void> _fetchProducts() async {
-  setState(() {
-    isLoading = true; // Show loading indicator
-    errorMessage = null; // Clear any previous error messages
-  });
+    setState(() {
+      isLoading = true; // Show loading indicator
+      errorMessage = null; // Clear any previous error messages
+    });
 
-  try {
-    final response = await http.get(
-      Uri.parse(ApiConstants.productsApi), // Your API endpoint to get all products
-      headers: {
-        'Cookie': _phpSessionCookie!, // Send the session cookie for authentication
-      },
-    );
+    try {
+      final response = await http.get(
+        Uri.parse(
+            ApiConstants.productsApi), // Your API endpoint to get all products
+        headers: {
+          'Cookie':
+              _phpSessionCookie!, // Send the session cookie for authentication
+        },
+      );
 
-    // For debugging:
-    print('Products response status: ${response.statusCode}');
-    print('Products response body: ${response.body}');
+      // For debugging:
+      print('Products response status: ${response.statusCode}');
+      print('Products response body: ${response.body}');
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
 
-      if (data['success'] == true) {
-        final List<dynamic> productsData = data['products'];
+        if (data['success'] == true) {
+          final List<dynamic> productsData = data['products'];
+          setState(() {
+            products =
+                productsData.map((json) => Product.fromJson(json)).toList();
+
+            // Tri en ordre décroissant par id
+            products.sort((a, b) => b.id.compareTo(a.id));
+
+            // Si tu veux trier par prix décroissant, remplace par :
+            // products.sort((a, b) => b.price.compareTo(a.price));
+
+            isLoading = false;
+          });
+        } else {
+          final loc = AppLocalizations.of(context);
+          setState(() {
+            errorMessage = data['message'] ?? loc.productLoadError;
+            isLoading = false;
+          });
+        }
+      } else if (response.statusCode == 401) {
+        // Unauthorized - session likely expired
+        final loc = AppLocalizations.of(context);
         setState(() {
-          products =
-              productsData.map((json) => Product.fromJson(json)).toList();
-
-          // Tri en ordre décroissant par id
-          products.sort((a, b) => b.id.compareTo(a.id));
-
-          // Si tu veux trier par prix décroissant, remplace par :
-          // products.sort((a, b) => b.price.compareTo(a.price));
-
+          errorMessage = loc.productUnauthorized;
           isLoading = false;
         });
+        _navigateToLogin(); // Redirect to login
       } else {
         final loc = AppLocalizations.of(context);
         setState(() {
-          errorMessage =
-              data['message'] ?? loc.productLoadError;
+          errorMessage = loc.productHttpError(response.statusCode);
           isLoading = false;
         });
       }
-    } else if (response.statusCode == 401) {
-      // Unauthorized - session likely expired
+    } catch (e) {
+      // Catch network errors or other exceptions
       final loc = AppLocalizations.of(context);
       setState(() {
-        errorMessage = loc.productUnauthorized;
+        errorMessage =
+            loc.productConnectionError(ErrorUtils.getUserFriendlyError(e));
         isLoading = false;
       });
-      _navigateToLogin(); // Redirect to login
-    } else {
-      final loc = AppLocalizations.of(context);
-      setState(() {
-        errorMessage = loc.productHttpError(response.statusCode);
-        isLoading = false;
-      });
+      print('Error fetching products: $e'); // For debugging
     }
-  } catch (e) {
-    // Catch network errors or other exceptions
-    final loc = AppLocalizations.of(context);
-    setState(() {
-      errorMessage = loc.productConnectionError(ErrorUtils.getUserFriendlyError(e));
-      isLoading = false;
-    });
-    print('Error fetching products: $e'); // For debugging
   }
-}
-
 
   // Navigates to the login page and clears session
   Future<void> _navigateToLogin() async {
@@ -217,7 +218,7 @@ class _ProductPageState extends State<ProductPage> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     return Scaffold(
-      floatingActionButton: userRole != 'vendeur'
+      floatingActionButton: userRole == 'admin'
           ? FloatingActionButton(
               onPressed: () async {
                 // Naviguer vers la page d'ajout de produit
@@ -235,7 +236,7 @@ class _ProductPageState extends State<ProductPage> {
               tooltip: loc.productAddTooltip,
               child: const Icon(Icons.add, color: Colors.white),
             )
-          : null, // Masque le bouton si le rôle est 'vendeur'
+          : null, // Masque le bouton si le rôle n'est pas 'admin'
 
       appBar: AppBar(
         title: Text(
@@ -482,7 +483,7 @@ class _ProductPageState extends State<ProductPage> {
                   ),
                 ),
                 // Edit button
-                if (userRole != 'vendeur')
+                if (userRole == 'admin')
                   IconButton(
                     icon: const Icon(Icons.edit, color: Colors.blueAccent),
                     tooltip: loc.productEditTooltip,
@@ -497,26 +498,27 @@ class _ProductPageState extends State<ProductPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      loc.productPurchasePrice,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
+                if (userRole == 'admin')
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        loc.productPurchasePrice,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
                       ),
-                    ),
-                    Text(
-                      '${product.price.toStringAsFixed(2)} \$',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+                      Text(
+                        '${product.price.toStringAsFixed(2)} \$',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -614,19 +616,22 @@ class _ProductPageState extends State<ProductPage> {
                 const SizedBox(height: 15),
                 TextField(
                   controller: priceController,
-                  decoration: InputDecoration(labelText: loc.productEditPurchasePrice),
+                  decoration:
+                      InputDecoration(labelText: loc.productEditPurchasePrice),
                   keyboardType: TextInputType.numberWithOptions(decimal: true),
                 ),
                 const SizedBox(height: 15),
                 TextField(
                   controller: prixVenteController,
-                  decoration: InputDecoration(labelText: loc.productEditSalePrice),
+                  decoration:
+                      InputDecoration(labelText: loc.productEditSalePrice),
                   keyboardType: TextInputType.numberWithOptions(decimal: true),
                 ),
                 const SizedBox(height: 15),
                 TextField(
                   controller: quantityController,
-                  decoration: InputDecoration(labelText: loc.productEditQuantity),
+                  decoration:
+                      InputDecoration(labelText: loc.productEditQuantity),
                   keyboardType: TextInputType.number,
                 ),
               ],
@@ -672,7 +677,8 @@ class _ProductPageState extends State<ProductPage> {
                   final loc = AppLocalizations.of(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content: Text(loc.productUpdateError(result['message'] ?? '')),
+                        content: Text(
+                            loc.productUpdateError(result['message'] ?? '')),
                         backgroundColor: Colors.red),
                   );
                 }
@@ -738,7 +744,8 @@ class _ProductPageState extends State<ProductPage> {
       final loc = AppLocalizations.of(context);
       return {
         'success': false,
-        'message': loc.productUpdateConnectionError(ErrorUtils.getUserFriendlyError(e))
+        'message':
+            loc.productUpdateConnectionError(ErrorUtils.getUserFriendlyError(e))
       };
     }
   }

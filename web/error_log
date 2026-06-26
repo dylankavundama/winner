@@ -68,3 +68,101 @@ Stack trace:
 #0 /home/winnerco/public_html/login.php(3): require_once()
 #1 {main}
   thrown in /home/winnerco/public_html/config/db.php on line 19
+[28-Feb-2026 20:13:05 UTC] PHP Fatal error:  Uncaught Error: Class "PDO" not found in /home/winnerco/public_html/visit_counter.php:18
+Stack trace:
+#0 {main}
+  thrown in /home/winnerco/public_html/visit_counter.php on line 18
+[28-Feb-2026 20:13:10 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:13:10 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:13:10 UTC] PHP Fatal error:  Uncaught Error: Class "PDO" not found in /home/winnerco/public_html/config/db.php:11
+Stack trace:
+#0 /home/winnerco/public_html/login.php(3): require_once()
+#1 {main}
+  thrown in /home/winnerco/public_html/config/db.php on line 11
+[28-Feb-2026 20:21:58 UTC] PHP Fatal error:  Uncaught Error: Class "PDO" not found in /home/winnerco/public_html/visit_counter.php:18
+Stack trace:
+#0 {main}
+  thrown in /home/winnerco/public_html/visit_counter.php on line 18
+[28-Feb-2026 20:22:03 UTC] PHP Fatal error:  Uncaught Error: Class "PDO" not found in /home/winnerco/public_html/visit_counter.php:18
+Stack trace:
+#0 {main}
+  thrown in /home/winnerco/public_html/visit_counter.php on line 18
+[28-Feb-2026 20:22:08 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:22:08 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:22:08 UTC] PHP Fatal error:  Uncaught Error: Class "PDO" not found in /home/winnerco/public_html/config/db.php:11
+Stack trace:
+#0 /home/winnerco/public_html/login.php(3): require_once()
+#1 {main}
+  thrown in /home/winnerco/public_html/config/db.php on line 11
+[28-Feb-2026 20:27:16 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:27:16 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:28:59 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:28:59 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:29:01 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:29:01 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:29:09 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:29:09 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:29:39 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:29:39 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:30:29 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:30:29 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:30:48 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:30:48 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:30:55 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:30:55 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:30:55 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:30:55 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:31:00 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:31:00 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:31:07 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:31:07 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:31:31 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:31:31 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:31:39 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:31:39 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:31:46 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:31:46 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:31:59 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:31:59 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:32:26 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:32:26 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:32:32 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:32:32 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:32:38 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:32:38 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:32:42 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:32:42 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:33:06 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:33:06 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:34:29 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:34:29 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:34:58 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:34:58 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:35:55 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:35:55 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:37:00 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:37:00 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:37:53 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:37:53 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:38:50 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:38:50 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:39:31 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:39:31 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:40:52 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:40:52 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:41:14 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:41:14 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:41:36 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:41:36 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:41:38 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:41:38 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:43:46 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_0d2b4274fd278fbae65d874335d6d47e, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[28-Feb-2026 20:43:46 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[04-Mar-2026 15:37:27 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_485e9038e17b70f59b72db61aad518a2, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[04-Mar-2026 15:37:27 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[08-Mar-2026 11:23:01 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_7e53f33b924e7b8dfd05f222e8fa1d3a, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[08-Mar-2026 11:23:01 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[13-Mar-2026 04:17:26 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_4b19e773b3c7cc3068d5a717390926df, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[13-Mar-2026 04:17:26 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2
+[13-Mar-2026 16:20:38 UTC] PHP Warning:  session_start(): open(/var/cpanel/php/sessions/alt-php81/sess_f47d6641b8d9d7107f314dd9ae5f84a7, O_RDWR) failed: No such file or directory (2) in /home/winnerco/public_html/login.php on line 2
+[13-Mar-2026 16:20:38 UTC] PHP Warning:  session_start(): Failed to read session data: files (path: /var/cpanel/php/sessions/alt-php81) in /home/winnerco/public_html/login.php on line 2

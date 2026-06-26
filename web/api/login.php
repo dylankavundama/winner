@@ -1,5 +1,8 @@
 <?php
 header('Content-Type: application/json');
+if (!is_dir(ini_get('session.save_path')) || !is_writable(ini_get('session.save_path'))) {
+    session_save_path(sys_get_temp_dir());
+}
 session_start();
 require_once '../config/db.php';
 $input = json_decode(file_get_contents('php://input'), true);
